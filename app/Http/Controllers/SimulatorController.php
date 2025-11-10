@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
-use Carbon\Carbon; // Pastikan Carbon sudah diimpor
+use Carbon\Carbon;
 
 class SimulatorController extends Controller
 {
@@ -22,7 +22,7 @@ class SimulatorController extends Controller
      */
     public function calculate(Request $request)
     {
-        // --- 1. VALIDASI INPUT (DIREVISI untuk input baru) ---
+        // --- 1. VALIDASI INPUT ---
         $request->validate([
             'harga_jual' => 'required|numeric|min:1',
             'volume_penjualan' => 'required|numeric|min:1',
@@ -54,36 +54,43 @@ class SimulatorController extends Controller
         $biayaTetapSaatIni = $biayaTetap;
         $totalKeuntunganSetelahPajak = 0;
         
-        // 1. Implementasi Arus Kas
-        // Saldo Kas Awal: Modal Kerja dikurangi pengeluaran CAPEX
+        // Inisialisasi Arus Kas & Payback
         $saldoKas = $modalKerja - $capex;
         $capexSudahTercakup = false;
         $bulanBalikModal = null;
+        
+        // --- VARIABEL BARU UNTUK PERINGATAN KAS ---
+        $bulanKasNegatifPertama = null; 
+        $kasNegatifMessage = "Arus kas stabil, modal kerja aman selama proyeksi."; 
 
 
-        // --- 3. JALANKAN BUSINESS LOGIC ENGINE (BLE) YANG LEBIH DETAIL ---
+        // --- 3. JALANKAN BUSINESS LOGIC ENGINE (BLE) ---
         for ($i = 1; $i <= $totalBulanProyeksi; $i++) {
-            // Hitung setiap bulan dengan nilai yang sudah terinflasi
+            
             $pendapatan = $volumePenjualanSaatIni * $hargaJual;
-            $biayaVariabel = $volumePenjualanSaatIni * $cogsSaatIni; // COGS terinflasi
+            $biayaVariabel = $volumePenjualanSaatIni * $cogsSaatIni; 
             $keuntunganKotor = $pendapatan - $biayaVariabel;
             
             // Keuntungan Sebelum Pajak (EBIT)
-            $labaSebelumPajak = $keuntunganKotor - $biayaTetapSaatIni; // Biaya Tetap terinflasi
+            $labaSebelumPajak = $keuntunganKotor - $biayaTetapSaatIni; 
             
-            // 2. Perhitungan Pajak
-            // Pajak hanya dibayar jika ada laba (EBIT > 0)
+            // Perhitungan Pajak
             $pajakBulanIni = $labaSebelumPajak > 0 ? $labaSebelumPajak * $tarifPajak : 0;
             $keuntunganBersihSetelahPajak = $labaSebelumPajak - $pajakBulanIni;
             
             $totalKeuntunganSetelahPajak += $keuntunganBersihSetelahPajak;
 
-            // Arus Kas Bulanan (Asumsi sederhana: Laba Bersih = Arus Kas Operasi)
+            // Arus Kas Bulanan
             $arusKasOperasi = $keuntunganBersihSetelahPajak;
-            $saldoKas += $arusKasOperasi; // Tambahkan arus kas operasi ke saldo kas
+            $saldoKas += $arusKasOperasi; 
+            
+            // --- LOGIKA PERINGATAN KAS NEGATIF BARU ---
+            if ($saldoKas < 0 && $bulanKasNegatifPertama === null) {
+                 $bulanKasNegatifPertama = $i;
+                 $kasNegatifMessage = "Kritis! Saldo Kas mulai negatif pada Bulan $i. Diperlukan penambahan modal!";
+            }
 
-            // 4. Perhitungan Payback Period yang Lebih Akurat
-            // Payback tercapai saat saldo kas bulanan kembali ke atau melebihi Modal Kerja Awal
+            // Perhitungan Payback Period
             if (!$capexSudahTercakup && $saldoKas >= $modalKerja) {
                  $bulanBalikModal = $i;
                  $capexSudahTercakup = true;
@@ -98,24 +105,20 @@ class SimulatorController extends Controller
                 'pajak' => round($pajakBulanIni),
                 'keuntungan_bersih' => round($keuntunganBersihSetelahPajak),
                 'volume_unit' => round($volumePenjualanSaatIni),
-                'saldo_kas' => round($saldoKas), // Saldo Kas bulanan
+                'saldo_kas' => round($saldoKas), 
             ];
 
-            // Terapkan pertumbuhan bulanan
+            // Terapkan pertumbuhan dan inflasi untuk bulan berikutnya
             $volumePenjualanSaatIni *= (1 + ($pertumbuhan / 12));
-            
-            // 3. Terapkan Inflasi Biaya untuk bulan berikutnya
             $cogsSaatIni *= (1 + ($inflasiBiaya / 12));
             $biayaTetapSaatIni *= (1 + ($inflasiBiaya / 12));
         }
 
         // --- 5. SIAPKAN HASIL AKHIR ---
-        // Finalisasi Waktu Balik Modal
         $waktuBalikModal = $bulanBalikModal !== null 
             ? "$bulanBalikModal Bulan" 
             : "Di atas $totalBulanProyeksi Bulan";
 
-        // Hitung BEP (Titik Impas) - Menggunakan biaya Tetap BULAN 1 (tanpa inflasi)
         $marginKontribusi = $hargaJual - $cogs;
         $titikImpasUnit = $marginKontribusi > 0 ? ceil($biayaTetap / $marginKontribusi) : 0;
 
@@ -127,7 +130,8 @@ class SimulatorController extends Controller
                 'titik_impas_unit' => number_format($titikImpasUnit, 0, ',', '.'),
                 'waktu_balik_modal' => $waktuBalikModal, 
                 'diperbarui_pada' => Carbon::now()->isoFormat('D MMMM Y, H:mm') . " WITA",
-                'saldo_kas_akhir' => number_format($saldoKas, 0, ',', '.'), 
+                'saldo_kas_akhir' => number_format($saldoKas, 0, ',', '.'),
+                'cash_warning_message' => $kasNegatifMessage, // Data baru
             ],
             'proyeksi_bulanan' => $proyeksiBulanan,
             'skenario_perbandingan' => [
@@ -137,7 +141,6 @@ class SimulatorController extends Controller
                     'keuntungan_bersih_tahunan' => number_format($totalKeuntunganSetelahPajak, 0, ',', '.'),
                     'saldo_kas_akhir' => number_format($saldoKas, 0, ',', '.'),
                 ],
-                // Skenario B dikosongkan untuk diisi secara dinamis di frontend
                 'skenario_b' => null
             ]
         ];

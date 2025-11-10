@@ -183,6 +183,11 @@
                             <p class="text-sm font-medium text-gray-500">Waktu Balik Modal (Payback Period)</p>
                             <p id="payback-period" class="text-2xl font-bold text-indigo-600 mt-1">-</p>
                         </div>
+                        
+                        <div id="cash-warning-card" class="col-span-1 md:col-span-4 bg-yellow-100 p-4 rounded-lg shadow-md border-l-4 border-yellow-500 hidden">
+                            <p class="text-sm font-medium text-gray-700">Peringatan Arus Kas</p>
+                            <p id="cash-warning-message" class="text-lg font-bold text-yellow-800 mt-1"></p>
+                        </div>
                     </div>
 
                     <h3 class="text-xl font-semibold mt-6 mb-3 border-b pb-1">Visualisasi Proyeksi Bulanan (1 Tahun)</h3>
@@ -201,19 +206,49 @@
 
 
                     <h3 class="text-xl font-semibold mt-6 mb-3 border-b pb-1">Analisis Skenario Perbandingan</h3>
-                    <div class="bg-white p-4 rounded-lg shadow-md overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Metrik</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Skenario Dasar (A)</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" id="skenario-b-header">Skenario Lain (Belum Dihitung)</th> 
-                                </tr>
-                            </thead>
-                            <tbody id="comparison-table-body" class="bg-white divide-y divide-gray-200">
-                            </tbody>
-                        </table>
+                    
+                    <div class="flex justify-end mb-4">
+                        <button type="button" id="showSkenarioBForm" class="bg-indigo-500 text-white px-4 py-2 rounded-md hover:bg-indigo-600 hidden">
+                            Buat Skenario Perbandingan (B) &rarr;
+                        </button>
                     </div>
+                    
+                    <div id="skenarioBInputsContainer" class="bg-gray-100 p-4 rounded-lg shadow-inner mb-6 hidden">
+                        <h4 class="text-lg font-semibold mb-3 text-indigo-600">Input Skenario B (Hanya ubah Harga Jual & Volume):</h4>
+                        
+                        <form id="skenarioBForm" class="space-y-4">
+                            @csrf
+                            <div class="flex items-start space-x-4 input-group">
+                                <label for="harga_jual_skenario_b" class="block text-sm font-medium text-gray-700 w-1/3">Harga Jual per Unit Skenario B (Rp)</label>
+                                <input type="number" name="harga_jual" id="harga_jual_skenario_b" min="0" required class="flex-1 mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
+                                <div class="error-message text-red-500 text-xs mt-1" id="error-harga_jual"></div>
+                            </div>
+                            <div class="flex items-start space-x-4 input-group">
+                                <label for="volume_penjualan_skenario_b" class="block text-sm font-medium text-gray-700 w-1/3">Volume Penjualan Skenario B (Unit/Bulan)</label>
+                                <input type="number" name="volume_penjualan" id="volume_penjualan_skenario_b" min="0" required class="flex-1 mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
+                                <div class="error-message text-red-500 text-xs mt-1" id="error-volume_penjualan"></div>
+                            </div>
+                            
+                            <div class="flex justify-end pt-2">
+                                <button type="submit" id="calculateSkenarioBButton" class="bg-indigo-600 text-white px-4 py-2 rounded-md font-medium hover:bg-indigo-700">
+                                    Hitung Skenario B
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Metrik</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Skenario Dasar (A)</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" id="skenario-b-header">Skenario Lain (Belum Dihitung)</th> 
+                            </tr>
+                        </thead>
+                        <tbody id="comparison-table-body" class="bg-white divide-y divide-gray-200">
+                        </tbody>
+                    </table>
                 </div>
            </div>
             
