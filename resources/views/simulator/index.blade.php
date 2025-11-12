@@ -9,6 +9,14 @@
     
     @vite('resources/css/app.css')
 
+    <script>
+        // Gunakan nilai yang dikirim dari controller (Auth::check())
+        window.isLoggedIn = @json($isLoggedIn ?? false); 
+        // Kirim route login/register jika user belum login
+        window.loginRoute = @json($loginRoute ?? '#');
+        window.registerRoute = @json($registerRoute ?? '#');
+    </script>
+    
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     
     <script src="https://cdn.tailwindcss.com"></script>
@@ -20,16 +28,51 @@
         /* Tambahkan gaya untuk penanganan error */
         .input-group { position: relative; }
         .error-message { position: absolute; right: 0; top: 100%; }
+        /* Gaya untuk Modal (BARU) */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.5); z-index: 1000; display: none;
+        }
     </style>
 </head>
 <body class="bg-gray-100 p-8">
 
+    <div class="max-w-4xl mx-auto flex justify-end mb-4 space-x-4">
+        @auth
+        <span class="text-sm text-gray-700">Selamat datang, {{ Auth::user()->name }}!</span>
+        <form method="POST" action="{{ route('logout') }}" class="inline">
+            @csrf
+            <button type="submit" class="text-sm font-medium text-red-500 hover:text-red-700">Logout</button>
+        </form>
+        @else
+        <a href="{{ route('login') }}" class="text-sm font-medium text-blue-500 hover:text-blue-700">Login</a>
+        <a href="{{ route('register') }}" class="text-sm font-medium text-green-500 hover:text-green-700">Register</a>
+        @endauth
+    </div>
+
+
     <div class="max-w-4xl mx-auto bg-white shadow-xl rounded-lg p-6">
         <h1 class="text-3xl font-bold text-gray-800 mb-6 border-b pb-2">Simulator Proyeksi Bisnis Realistis</h1>
+        
+        <div class="flex space-x-4 mb-6">
+            @auth
+            <button type="button" id="saveScenarioButton" data-save-url="{{ route('simulator.save') }}" class="bg-blue-600 text-white px-4 py-2 rounded-md font-medium hover:bg-blue-700 disabled:opacity-50" disabled>
+                Simpan Skenario (A)
+            </button>
+            <button type="button" id="loadScenarioButton" data-list-url="{{ route('simulator.list') }}" class="bg-gray-600 text-white px-4 py-2 rounded-md font-medium hover:bg-gray-700">
+                Muat Skenario Tersimpan
+            </button>
+            @else
+            <div id="authRequiredMessage" class="text-yellow-600 border border-yellow-300 bg-yellow-50 p-3 rounded-md w-full">
+                <a href="{{ route('login') }}" class="font-bold underline">Login</a> atau Daftar untuk menggunakan fitur Simpan & Muat.
+            </div>
+            @endauth
+        </div>
+
 
         <form id="simulatorForm" class="space-y-6" data-calculate-url="{{ route('simulator.calculate') }}">
             @csrf
-
+            
             <div class="flex border-b border-gray-200">
                 <button type="button" data-step="1" class="tab-button p-3 text-lg font-medium text-blue-600 border-b-2 border-blue-600 hover:text-blue-800 focus:outline-none">
                     Langkah 1: Profil & Pendapatan
@@ -221,12 +264,12 @@
                             <div class="flex items-start space-x-4 input-group">
                                 <label for="harga_jual_skenario_b" class="block text-sm font-medium text-gray-700 w-1/3">Harga Jual per Unit Skenario B (Rp)</label>
                                 <input type="number" name="harga_jual" id="harga_jual_skenario_b" min="0" required class="flex-1 mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
-                                <div class="error-message text-red-500 text-xs mt-1" id="error-harga_jual"></div>
+                                <div class="error-message text-red-500 text-xs mt-1" id="error-harga_jual_skenario_b"></div>
                             </div>
                             <div class="flex items-start space-x-4 input-group">
                                 <label for="volume_penjualan_skenario_b" class="block text-sm font-medium text-gray-700 w-1/3">Volume Penjualan Skenario B (Unit/Bulan)</label>
                                 <input type="number" name="volume_penjualan" id="volume_penjualan_skenario_b" min="0" required class="flex-1 mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
-                                <div class="error-message text-red-500 text-xs mt-1" id="error-volume_penjualan"></div>
+                                <div class="error-message text-red-500 text-xs mt-1" id="error-volume_penjualan_skenario_b"></div>
                             </div>
                             
                             <div class="flex justify-end pt-2">
@@ -252,6 +295,40 @@
                 </div>
            </div>
             
+        </div>
+    </div>
+    
+    <div id="saveModal" class="modal-overlay hidden">
+        <div class="max-w-md mx-auto mt-20 bg-white p-6 rounded-lg shadow-xl">
+            <h3 class="text-xl font-bold mb-4">Simpan Skenario Dasar (A)</h3>
+            <form id="saveForm">
+                @csrf
+                <input type="hidden" name="action_type" value="save">
+                <div class="mb-4">
+                    <label for="nama_skenario" class="block text-sm font-medium text-gray-700">Nama Skenario</label>
+                    <input type="text" name="nama_skenario" id="nama_skenario" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
+                    <div class="error-message text-red-500 text-xs mt-1" id="error-nama_skenario"></div>
+                </div>
+                <div class="flex justify-end space-x-4">
+                    <button type="button" id="closeSaveModal" class="px-4 py-2 bg-gray-300 rounded-md hover:bg-gray-400">Batal</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="loadModal" class="modal-overlay hidden">
+        <div class="max-w-xl mx-auto mt-20 bg-white p-6 rounded-lg shadow-xl">
+            <h3 class="text-xl font-bold mb-4">Muat Skenario Tersimpan (Milik Anda)</h3>
+            <div id="loadingLoad" class="text-center text-blue-500 mb-4 hidden">Memuat daftar skenario...</div>
+            <select id="savedScenariosDropdown" class="w-full p-2 border border-gray-300 rounded-md mb-4">
+                <option value="">-- Pilih Skenario --</option>
+            </select>
+            <div id="noScenariosMessage" class="text-center text-gray-500 mb-4 hidden">Anda belum memiliki skenario tersimpan.</div> 
+            <div class="flex justify-end space-x-4">
+                <button type="button" id="closeLoadModal" class="px-4 py-2 bg-gray-300 rounded-md hover:bg-gray-400">Tutup</button>
+                <button type="button" id="executeLoadButton" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50" data-load-url="{{ url('/simulator/load') }}" disabled>Muat & Isi Form</button>
+            </div>
         </div>
     </div>
 
