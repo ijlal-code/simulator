@@ -31,7 +31,8 @@
         /* Gaya untuk Modal (BARU) */
         .modal-overlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0, 0, 0, 0.5); z-index: 1000; display: none;
+            background: rgba(0, 0, 0, 0.5); z-index: 1000;
+            display: flex; align-items: center; justify-content: center;
         }
     </style>
 </head>
@@ -298,20 +299,52 @@
         </div>
     </div>
     
-    <div id="saveModal" class="modal-overlay hidden">
-        <div class="max-w-md mx-auto mt-20 bg-white p-6 rounded-lg shadow-xl">
-            <h3 class="text-xl font-bold mb-4">Simpan Skenario Dasar (A)</h3>
-            <form id="saveForm">
+    <div id="saveCard" class="fixed inset-0 z-50 hidden flex items-center justify-center">
+        <div class="absolute inset-0 bg-black/40" data-save-card-dismiss></div>
+        <div class="relative max-w-lg w-full mx-4 bg-white rounded-2xl shadow-2xl p-6 space-y-5">
+            <div class="flex items-start justify-between gap-4">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-widest text-blue-500">Simpan skenario</p>
+                    <h3 class="text-2xl font-bold text-gray-900">Berikan nama sebelum diarsipkan</h3>
+                    <p class="mt-1 text-sm text-gray-500">Periksa ringkasan input Anda lalu beri nama yang mudah diingat.</p>
+                </div>
+                <button type="button" id="closeSaveCard" class="text-gray-400 hover:text-gray-600">
+                    <span class="sr-only">Tutup</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+            </div>
+
+            <dl class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div class="p-4 rounded-lg bg-blue-50">
+                    <dt class="text-xs font-semibold text-blue-700 tracking-wide">Harga Jual</dt>
+                    <dd class="text-lg font-bold text-blue-900" data-save-summary="harga_jual">-</dd>
+                </div>
+                <div class="p-4 rounded-lg bg-indigo-50">
+                    <dt class="text-xs font-semibold text-indigo-700 tracking-wide">Volume Penjualan</dt>
+                    <dd class="text-lg font-bold text-indigo-900" data-save-summary="volume_penjualan">-</dd>
+                </div>
+                <div class="p-4 rounded-lg bg-emerald-50">
+                    <dt class="text-xs font-semibold text-emerald-700 tracking-wide">Modal Kerja</dt>
+                    <dd class="text-lg font-bold text-emerald-900" data-save-summary="modal_kerja">-</dd>
+                </div>
+                <div class="p-4 rounded-lg bg-amber-50">
+                    <dt class="text-xs font-semibold text-amber-700 tracking-wide">CAPEX</dt>
+                    <dd class="text-lg font-bold text-amber-900" data-save-summary="capex">-</dd>
+                </div>
+            </dl>
+
+            <form id="saveForm" class="space-y-4">
                 @csrf
-                <input type="hidden" name="action_type" value="save">
-                <div class="mb-4">
+                <div>
                     <label for="nama_skenario" class="block text-sm font-medium text-gray-700">Nama Skenario</label>
-                    <input type="text" name="nama_skenario" id="nama_skenario" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
+                    <input type="text" name="nama_skenario" id="nama_skenario" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-3 focus:border-blue-500 focus:ring focus:ring-blue-200">
                     <div class="error-message text-red-500 text-xs mt-1" id="error-nama_skenario"></div>
                 </div>
-                <div class="flex justify-end space-x-4">
-                    <button type="button" id="closeSaveModal" class="px-4 py-2 bg-gray-300 rounded-md hover:bg-gray-400">Batal</button>
-                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Simpan</button>
+                <div class="flex flex-col gap-3 sm:flex-row sm:justify-end">
+                    <button type="button" id="cancelSaveCard" class="w-full sm:w-auto px-4 py-2 rounded-md border border-gray-300 text-gray-600 hover:bg-gray-50">Batal</button>
+                    <button type="submit" class="w-full sm:w-auto px-4 py-2 rounded-md bg-blue-600 text-white font-semibold hover:bg-blue-700">Simpan Skenario</button>
                 </div>
             </form>
         </div>
