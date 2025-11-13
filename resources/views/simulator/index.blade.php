@@ -27,7 +27,7 @@
         .tab-content.active { display: block; }
         /* Tambahkan gaya untuk penanganan error */
         .input-group { position: relative; }
-        .error-message { position: absolute; right: 0; top: 100%; }
+        .error-message { position: relative; margin-top: 0.25rem; }
         /* Gaya untuk Modal (BARU) */
         .modal-overlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
@@ -40,15 +40,17 @@
 <body class="bg-slate-50 min-h-screen">
 
     <header class="bg-white shadow-md border-b border-slate-100">
-        <div class="w-full px-4 sm:px-6 lg:px-12 py-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div class="w-full px-4 sm:px-6 lg:px-12 py-5 flex flex-col gap-4 text-center lg:text-left">
             <div>
                 <p class="text-xs font-semibold uppercase tracking-widest text-blue-500">{{ $appTitle }}</p>
                 <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">Dashboard Simulasi &amp; Proyeksi</h1>
                 <p class="text-sm text-gray-500">Susun asumsi bisnis Anda dan dapatkan ringkasan instan.</p>
             </div>
-            <div class="flex flex-wrap items-center gap-3 text-sm text-gray-700">
+            <div class="flex flex-wrap items-center justify-center lg:justify-end gap-3 text-sm text-gray-700">
                 @auth
-                <span class="font-medium">Halo, {{ Auth::user()->name }}!</span>
+                <a href="{{ route('profile.edit') }}" class="font-medium text-blue-600 hover:underline">
+                    Halo, {{ Auth::user()->name }}!
+                </a>
                 <form method="POST" action="{{ route('logout') }}" class="inline-flex">
                     @csrf
                     <button type="submit" class="px-4 py-2 rounded-full border border-red-200 text-red-600 hover:bg-red-50 transition">Logout</button>
@@ -62,25 +64,26 @@
     </header>
 
     <main class="w-full px-3 sm:px-6 lg:px-12 py-8">
-        <div class="w-full bg-white shadow-2xl rounded-2xl border border-slate-100 p-5 sm:p-8">
-            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6 border-b pb-4">
-                <div>
+        <div class="w-full bg-white shadow-2xl rounded-2xl border border-slate-100 p-5 sm:p-8 space-y-6">
+            <div class="space-y-4 mb-2 pb-4 border-b border-slate-100">
+                <div class="flex flex-col gap-3 w-full">
+                    @auth
+                    <button type="button" id="saveScenarioButton" data-save-url="{{ route('simulator.save') }}" class="bg-blue-600 text-white px-5 py-3 rounded-xl font-semibold hover:bg-blue-700 disabled:opacity-40 w-full sm:w-auto" disabled>
+                        Simpan Skenario (A)
+                    </button>
+                    <button type="button" id="loadScenarioButton" data-list-url="{{ route('simulator.list') }}" class="bg-gray-700 text-white px-5 py-3 rounded-xl font-semibold hover:bg-gray-800 w-full sm:w-auto">
+                        Muat Skenario Tersimpan
+                    </button>
+                    @else
+                    <div id="authRequiredMessage" class="text-yellow-700 border border-yellow-200 bg-yellow-50 px-4 py-3 rounded-xl text-center">
+                        <a href="{{ route('login') }}" class="font-bold underline">Login</a> atau Daftar untuk menggunakan fitur Simpan &amp; Muat.
+                    </div>
+                    @endauth
+                </div>
+                <div class="text-center sm:text-left">
                     <h2 class="text-2xl font-bold text-gray-800">{{ $appTitle }}</h2>
                     <p class="text-sm text-gray-500">Ikuti 3 langkah sederhana untuk mendapatkan proyeksi terperinci.</p>
                 </div>
-            <div class="flex flex-wrap gap-3 justify-end">
-                @auth
-                <button type="button" id="saveScenarioButton" data-save-url="{{ route('simulator.save') }}" class="bg-blue-600 text-white px-5 py-3 rounded-xl font-semibold hover:bg-blue-700 disabled:opacity-40" disabled>
-                    Simpan Skenario (A)
-                </button>
-                <button type="button" id="loadScenarioButton" data-list-url="{{ route('simulator.list') }}" class="bg-gray-700 text-white px-5 py-3 rounded-xl font-semibold hover:bg-gray-800">
-                    Muat Skenario Tersimpan
-                </button>
-                @else
-                <div id="authRequiredMessage" class="text-yellow-700 border border-yellow-200 bg-yellow-50 px-4 py-3 rounded-xl w-full sm:w-auto">
-                    <a href="{{ route('login') }}" class="font-bold underline">Login</a> atau Daftar untuk menggunakan fitur Simpan &amp; Muat.
-                </div>
-                @endauth
             </div>
 
 
@@ -101,25 +104,29 @@
             
             <div id="step-1" class="tab-content active space-y-4">
                 <h2 class="text-2xl font-semibold mb-4 text-blue-600">Langkah 1: Profil Usaha & Pendapatan</h2>
-                <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:space-x-4 input-group">
-                    <label for="harga_jual" class="block text-sm font-medium text-gray-700 w-full sm:w-1/3">Harga Jual per Unit (Rp)</label>
-                    <input type="number" name="harga_jual" id="harga_jual" value="100000" min="0" class="flex-1 mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
-                    <span class="text-sm text-gray-500 hidden sm:block sm:w-1/12 text-right">
-                        <abbr title="Harga produk atau jasa Anda per unit.">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                        </abbr>
-                    </span>
-                    <div class="error-message text-red-500 text-xs mt-1" id="error-harga_jual"></div>
+                <div class="flex flex-col gap-2 input-group">
+                    <div class="flex items-center justify-between gap-2">
+                        <label for="harga_jual" class="text-sm font-medium text-gray-700">Harga Jual per Unit (Rp)</label>
+                        <span class="text-xs text-gray-500">
+                            <abbr title="Harga produk atau jasa Anda per unit.">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            </abbr>
+                        </span>
+                    </div>
+                    <input type="number" name="harga_jual" id="harga_jual" value="100000" min="0" class="block w-full border border-gray-300 rounded-md shadow-sm p-2">
+                    <div class="error-message text-red-500 text-xs" id="error-harga_jual"></div>
                 </div>
-                <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:space-x-4 input-group">
-                    <label for="volume_penjualan" class="block text-sm font-medium text-gray-700 w-full sm:w-1/3">Target Volume Penjualan (Unit/Bulan)</label>
-                    <input type="number" name="volume_penjualan" id="volume_penjualan" value="1000" min="0" class="flex-1 mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
-                    <span class="text-sm text-gray-500 hidden sm:block sm:w-1/12 text-right">
-                        <abbr title="Jumlah unit produk yang diharapkan terjual setiap bulan.">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                        </abbr>
-                    </span>
-                    <div class="error-message text-red-500 text-xs mt-1" id="error-volume_penjualan"></div>
+                <div class="flex flex-col gap-2 input-group">
+                    <div class="flex items-center justify-between gap-2">
+                        <label for="volume_penjualan" class="text-sm font-medium text-gray-700">Target Volume Penjualan (Unit/Bulan)</label>
+                        <span class="text-xs text-gray-500">
+                            <abbr title="Jumlah unit produk yang diharapkan terjual setiap bulan.">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            </abbr>
+                        </span>
+                    </div>
+                    <input type="number" name="volume_penjualan" id="volume_penjualan" value="1000" min="0" class="block w-full border border-gray-300 rounded-md shadow-sm p-2">
+                    <div class="error-message text-red-500 text-xs" id="error-volume_penjualan"></div>
                 </div>
                 <div class="pt-4 border-t input-group">
                     <label for="tingkat_pertumbuhan" class="block text-sm font-medium text-gray-700">Tingkat Pertumbuhan Tahunan (%)</label>
@@ -136,20 +143,22 @@
 
             <div id="step-2" class="tab-content space-y-4">
                 <h2 class="text-2xl font-semibold mb-4 text-blue-600">Langkah 2: Biaya Modal & Investasi</h2>
-                <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:space-x-4 input-group">
-                    <label for="capex" class="block text-sm font-medium text-gray-700 w-full sm:w-1/3">Biaya Pembelian Aset Jangka Panjang (CAPEX) (Rp)</label>
-                    <input type="number" name="capex" id="capex" value="50000000" min="0" class="flex-1 mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
-                    <span class="text-sm text-gray-500 hidden sm:block sm:w-1/12 text-right">
-                        <abbr title="Biaya Pembelian Aset Jangka Panjang (Misalnya: Mesin, Peralatan, Gedung)">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                        </abbr>
-                    </span>
-                    <div class="error-message text-red-500 text-xs mt-1" id="error-capex"></div>
+                <div class="flex flex-col gap-2 input-group">
+                    <div class="flex items-center justify-between gap-2">
+                        <label for="capex" class="text-sm font-medium text-gray-700">Biaya Pembelian Aset Jangka Panjang (CAPEX) (Rp)</label>
+                        <span class="text-xs text-gray-500">
+                            <abbr title="Biaya Pembelian Aset Jangka Panjang (Misalnya: Mesin, Peralatan, Gedung)">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            </abbr>
+                        </span>
+                    </div>
+                    <input type="number" name="capex" id="capex" value="50000000" min="0" class="block w-full border border-gray-300 rounded-md shadow-sm p-2">
+                    <div class="error-message text-red-500 text-xs" id="error-capex"></div>
                 </div>
-                <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:space-x-4 input-group">
-                    <label for="modal_kerja" class="block text-sm font-medium text-gray-700 w-full sm:w-1/3">Modal Kerja Awal (Kas) (Rp)</label>
-                    <input type="number" name="modal_kerja" id="modal_kerja" value="10000000" min="0" class="flex-1 mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
-                    <div class="error-message text-red-500 text-xs mt-1" id="error-modal_kerja"></div>
+                <div class="flex flex-col gap-2 input-group">
+                    <label for="modal_kerja" class="text-sm font-medium text-gray-700">Modal Kerja Awal (Kas) (Rp)</label>
+                    <input type="number" name="modal_kerja" id="modal_kerja" value="10000000" min="0" class="block w-full border border-gray-300 rounded-md shadow-sm p-2">
+                    <div class="error-message text-red-500 text-xs" id="error-modal_kerja"></div>
                 </div>
                 <div class="flex justify-between pt-4">
                     <button type="button" data-prev="1" class="step-nav-button bg-gray-400 text-white px-4 py-2 rounded-md hover:bg-gray-500">
@@ -163,31 +172,35 @@
 
             <div id="step-3" class="tab-content space-y-4">
                 <h2 class="text-2xl font-semibold mb-4 text-blue-600">Langkah 3: Biaya Operasional, Pajak & Inflasi (Bulanan)</h2>
-                <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:space-x-4 input-group">
-                    <label for="cogs" class="block text-sm font-medium text-gray-700 w-full sm:w-1/3">Biaya Langsung Produk (COGS) per Unit (Rp)</label>
-                    <input type="number" name="cogs" id="cogs" value="30000" min="0" class="flex-1 mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
-                    <span class="text-sm text-gray-500 hidden sm:block sm:w-1/12 text-right">
-                        <abbr title="Cost of Goods Sold (COGS). Biaya langsung bahan baku, tenaga kerja, dll., per unit.">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                        </abbr>
-                    </span>
-                    <div class="error-message text-red-500 text-xs mt-1" id="error-cogs"></div>
+                <div class="flex flex-col gap-2 input-group">
+                    <div class="flex items-center justify-between gap-2">
+                        <label for="cogs" class="text-sm font-medium text-gray-700">Biaya Langsung Produk (COGS) per Unit (Rp)</label>
+                        <span class="text-xs text-gray-500">
+                            <abbr title="Cost of Goods Sold (COGS). Biaya langsung bahan baku, tenaga kerja, dll., per unit.">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            </abbr>
+                        </span>
+                    </div>
+                    <input type="number" name="cogs" id="cogs" value="30000" min="0" class="block w-full border border-gray-300 rounded-md shadow-sm p-2">
+                    <div class="error-message text-red-500 text-xs" id="error-cogs"></div>
                 </div>
-                <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:space-x-4 input-group">
-                    <label for="biaya_tetap" class="block text-sm font-medium text-gray-700 w-full sm:w-1/3">Biaya Tetap (Sewa, Gaji, dll.) (Rp/Bulan)</label>
-                    <input type="number" name="biaya_tetap" id="biaya_tetap" value="5000000" min="0" class="flex-1 mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
-                    <div class="error-message text-red-500 text-xs mt-1" id="error-biaya_tetap"></div>
+                <div class="flex flex-col gap-2 input-group">
+                    <label for="biaya_tetap" class="text-sm font-medium text-gray-700">Biaya Tetap (Sewa, Gaji, dll.) (Rp/Bulan)</label>
+                    <input type="number" name="biaya_tetap" id="biaya_tetap" value="5000000" min="0" class="block w-full border border-gray-300 rounded-md shadow-sm p-2">
+                    <div class="error-message text-red-500 text-xs" id="error-biaya_tetap"></div>
                 </div>
                 
-                <div class="flex items-start space-x-4 pt-4 border-t input-group">
-                    <label for="tarif_pajak" class="block text-sm font-medium text-gray-700 w-full sm:w-1/3">Tarif Pajak Penghasilan (%)</label>
-                    <input type="number" name="tarif_pajak" id="tarif_pajak" value="10" min="0" max="100" class="flex-1 mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
-                    <span class="text-sm text-gray-500 hidden sm:block sm:w-1/12 text-right">
-                        <abbr title="Asumsi tarif PPh yang berlaku untuk laba sebelum pajak Anda.">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                        </abbr>
-                    </span>
-                    <div class="error-message text-red-500 text-xs mt-1" id="error-tarif_pajak"></div>
+                <div class="flex flex-col gap-2 pt-4 border-t input-group">
+                    <div class="flex items-center justify-between gap-2">
+                        <label for="tarif_pajak" class="text-sm font-medium text-gray-700">Tarif Pajak Penghasilan (%)</label>
+                        <span class="text-xs text-gray-500">
+                            <abbr title="Asumsi tarif PPh yang berlaku untuk laba sebelum pajak Anda.">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            </abbr>
+                        </span>
+                    </div>
+                    <input type="number" name="tarif_pajak" id="tarif_pajak" value="10" min="0" max="100" class="block w-full border border-gray-300 rounded-md shadow-sm p-2">
+                    <div class="error-message text-red-500 text-xs" id="error-tarif_pajak"></div>
                 </div>
                 
                 <div class="pt-4 border-t input-group">
@@ -276,18 +289,18 @@
 
                         <form id="skenarioBForm" class="space-y-4">
                             @csrf
-                            <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:space-x-4 input-group">
-                                <label for="harga_jual_skenario_b" class="block text-sm font-medium text-gray-700 w-full sm:w-1/3">Harga Jual per Unit Skenario B (Rp)</label>
-                                <input type="number" name="harga_jual" id="harga_jual_skenario_b" min="0" required class="flex-1 mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
-                                <div class="error-message text-red-500 text-xs mt-1" id="error-harga_jual_skenario_b"></div>
+                            <div class="flex flex-col gap-2 input-group">
+                                <label for="harga_jual_skenario_b" class="text-sm font-medium text-gray-700">Harga Jual per Unit Skenario B (Rp)</label>
+                                <input type="number" name="harga_jual" id="harga_jual_skenario_b" min="0" required class="block w-full border border-gray-300 rounded-md shadow-sm p-2">
+                                <div class="error-message text-red-500 text-xs" id="error-harga_jual_skenario_b"></div>
                             </div>
-                            <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:space-x-4 input-group">
-                                <label for="volume_penjualan_skenario_b" class="block text-sm font-medium text-gray-700 w-full sm:w-1/3">Volume Penjualan Skenario B (Unit/Bulan)</label>
-                                <input type="number" name="volume_penjualan" id="volume_penjualan_skenario_b" min="0" required class="flex-1 mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
-                                <div class="error-message text-red-500 text-xs mt-1" id="error-volume_penjualan_skenario_b"></div>
+                            <div class="flex flex-col gap-2 input-group">
+                                <label for="volume_penjualan_skenario_b" class="text-sm font-medium text-gray-700">Volume Penjualan Skenario B (Unit/Bulan)</label>
+                                <input type="number" name="volume_penjualan" id="volume_penjualan_skenario_b" min="0" required class="block w-full border border-gray-300 rounded-md shadow-sm p-2">
+                                <div class="error-message text-red-500 text-xs" id="error-volume_penjualan_skenario_b"></div>
                             </div>
 
-                            <div class="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center pt-2">
+                            <div class="flex flex-col gap-3 pt-2">
                                 <button type="button" id="closeSkenarioBForm" class="text-sm font-medium text-gray-500 hover:text-gray-700">Tutup Form Skenario B</button>
                                 <button type="submit" id="calculateSkenarioBButton" class="bg-indigo-600 text-white px-4 py-2 rounded-md font-medium hover:bg-indigo-700">
                                     Hitung Skenario B
@@ -357,9 +370,9 @@
                     <input type="text" name="nama_skenario" id="nama_skenario" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-3 focus:border-blue-500 focus:ring focus:ring-blue-200">
                     <div class="error-message text-red-500 text-xs mt-1" id="error-nama_skenario"></div>
                 </div>
-                <div class="flex flex-col gap-3 sm:flex-row sm:justify-end">
-                    <button type="button" id="cancelSaveCard" class="w-full sm:w-auto px-4 py-2 rounded-md border border-gray-300 text-gray-600 hover:bg-gray-50">Batal</button>
-                    <button type="submit" class="w-full sm:w-auto px-4 py-2 rounded-md bg-blue-600 text-white font-semibold hover:bg-blue-700">Simpan Skenario</button>
+                <div class="flex flex-col gap-3">
+                    <button type="button" id="cancelSaveCard" class="w-full px-4 py-2 rounded-md border border-gray-300 text-gray-600 hover:bg-gray-50">Batal</button>
+                    <button type="submit" class="w-full px-4 py-2 rounded-md bg-blue-600 text-white font-semibold hover:bg-blue-700">Simpan Skenario</button>
                 </div>
             </form>
         </div>
