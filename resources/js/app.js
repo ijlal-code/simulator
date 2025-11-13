@@ -35,6 +35,36 @@ document.addEventListener('DOMContentLoaded', function () {
     const warningCard = document.getElementById('cash-warning-card');
     const warningMessage = document.getElementById('cash-warning-message');
 
+    const currencyFormatter = new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        maximumFractionDigits: 0
+    });
+    const numberFormatter = new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 });
+
+    const sanitizeNumber = (value) => {
+        if (value === null || value === undefined || value === '') {
+            return null;
+        }
+
+        if (typeof value === 'number') {
+            return value;
+        }
+
+        const parsed = Number(value.toString().replace(/[^0-9-]/g, ''));
+        return isNaN(parsed) ? null : parsed;
+    };
+
+    const formatCurrency = (value) => {
+        const numeric = sanitizeNumber(value);
+        return numeric === null ? '-' : currencyFormatter.format(numeric);
+    };
+
+    const formatNumber = (value) => {
+        const numeric = sanitizeNumber(value);
+        return numeric === null ? '-' : numberFormatter.format(numeric);
+    };
+
     // Variabel state
     let lastSkenarioAInputs = {};
     let keuntunganChartInstance = null;
@@ -200,7 +230,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 const hargaJualSkenarioB = document.getElementById('harga_jual_skenario_b').value;
 
                 const skenarioBData = {
-                    'harga_jual': hargaJualSkenarioB, 
+                    'harga_jual': hargaJualSkenarioB,
                     'keuntungan_bersih_tahunan': summary.keuntungan_bersih_proyeksi,
                     'saldo_kas_akhir': summary.saldo_kas_akhir,
                 };
@@ -211,8 +241,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     const key = metrikKeys[index];
                     if (key) {
                         const cellB = row.cells[2];
-                        const value = skenarioBData[key] !== undefined ? skenarioBData[key] : '-';
-                        cellB.innerHTML = `Rp. ${value}`;
+                        const value = skenarioBData[key];
+                        cellB.innerText = value === undefined ? '-' : formatCurrency(value);
                     }
                 });
 
@@ -293,9 +323,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     const skenario = data.data.skenario_perbandingan;
                     
                     // 1. Perbarui Ringkasan Metrik Kunci dan Peringatan Kas
-                    document.getElementById('net-profit').innerText = `Rp. ${summary.keuntungan_bersih_proyeksi}`;
-                    document.getElementById('final-cash-balance').innerText = `Rp. ${summary.saldo_kas_akhir}`; 
-                    document.getElementById('bep').innerText = `${summary.titik_impas_unit} Unit`;
+                    document.getElementById('net-profit').innerText = formatCurrency(summary.keuntungan_bersih_proyeksi);
+                    document.getElementById('final-cash-balance').innerText = formatCurrency(summary.saldo_kas_akhir);
+                    document.getElementById('bep').innerText = `${formatNumber(summary.titik_impas_unit)} Unit`;
                     document.getElementById('payback-period').innerText = summary.waktu_balik_modal;
                     document.getElementById('last-update').innerHTML = `<strong>Diperbarui pada ${summary.diperbarui_pada}</strong>`;
                     
@@ -337,7 +367,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         const row = tableBody.insertRow();
                         row.innerHTML = `
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${m.label}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Rp. ${skenario.skenario_a[m.key]}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatCurrency(skenario.skenario_a[m.key])}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">-</td> 
                         `;
                     });
