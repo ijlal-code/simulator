@@ -17,6 +17,8 @@ document.addEventListener('DOMContentLoaded', () => {
         formB: document.getElementById('skenarioBForm'),
         skenarioBContainer: document.getElementById('skenarioBInputsContainer'),
         showSkenarioBButton: document.getElementById('showSkenarioBForm'),
+        closeSkenarioBButton: document.getElementById('closeSkenarioBForm'),
+        skenarioBMessage: document.getElementById('skenario-b-message'),
         saveButton: document.getElementById('saveScenarioButton'),
         loadButton: document.getElementById('loadScenarioButton'),
         loadModal: document.getElementById('loadModal'),
@@ -62,6 +64,24 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     const formatRupiah = (value) => `Rp. ${numberFormatter.format(Math.round(Number(value) || 0))}`;
     const formatUnit = (value) => `${numberFormatter.format(Math.round(Number(value) || 0))} Unit`;
+    const setSkenarioBMessage = (message = '', variant = 'info') => {
+        if (!dom.skenarioBMessage) return;
+        const colorClasses = ['text-emerald-600', 'text-red-600', 'text-indigo-600'];
+        dom.skenarioBMessage.classList.remove(...colorClasses);
+        if (!message) {
+            dom.skenarioBMessage.classList.add('hidden');
+            dom.skenarioBMessage.innerText = '';
+            return;
+        }
+        const variantMap = {
+            success: 'text-emerald-600',
+            error: 'text-red-600',
+            info: 'text-indigo-600',
+        };
+        dom.skenarioBMessage.classList.remove('hidden');
+        dom.skenarioBMessage.classList.add(variantMap[variant] || variantMap.info);
+        dom.skenarioBMessage.innerText = message;
+    };
 
     const showStep = (step) => {
         dom.tabContents.forEach((content) => content.classList.remove('active'));
@@ -262,9 +282,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         rows.forEach((row) => {
             const tr = tableBody.insertRow();
+            const baseValue = skenario?.skenario_a?.[row.key] ?? 0;
             tr.innerHTML = `
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${row.label}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Rp. ${skenario.skenario_a[row.key]}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatRupiah(baseValue)}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">-</td>
             `;
         });
@@ -320,6 +341,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         dom.showSkenarioBButton?.classList.add('hidden');
         dom.skenarioBContainer?.classList.add('hidden');
+        setSkenarioBMessage('', 'info');
+        setSkenarioBMessage('', 'info');
         showStep(1);
     };
 
@@ -327,6 +350,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const calculateUrl = dom.formA.dataset.calculateUrl;
         setHidden(dom.loadingIndicator, false);
         dom.skenarioBContainer.style.opacity = '0.5';
+        setSkenarioBMessage('Sedang menghitung Skenario B...', 'info');
 
         fetch(calculateUrl, {
             method: 'POST',
@@ -353,20 +377,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     document.getElementById('skenario-b-header').innerText = 'Skenario B (Revisi)';
                     const tableRows = document.querySelectorAll('#comparison-table-body tr');
                     const mapping = {
-                        harga_jual: document.getElementById('harga_jual_skenario_b').value,
-                        keuntungan_bersih_tahunan: summary.keuntungan_bersih_proyeksi,
-                        saldo_kas_akhir: summary.saldo_kas_akhir,
+                        harga_jual: Number(document.getElementById('harga_jual_skenario_b').value || 0),
+                        keuntungan_bersih_tahunan: Number(summary.keuntungan_bersih_proyeksi || 0),
+                        saldo_kas_akhir: Number(summary.saldo_kas_akhir || 0),
                     };
 
                     const keys = ['harga_jual', 'keuntungan_bersih_tahunan', 'saldo_kas_akhir'];
                     tableRows.forEach((row, index) => {
                         const key = keys[index];
-                        row.children[2].innerHTML = `Rp. ${mapping[key] ?? '-'}`;
+                        row.children[2].innerHTML = formatRupiah(mapping[key] ?? 0);
                     });
 
-                    dom.skenarioBContainer.classList.add('hidden');
-                    dom.showSkenarioBButton?.classList.remove('hidden');
-                    alert('Skenario B berhasil dihitung dan ditambahkan ke tabel perbandingan.');
+                    setSkenarioBMessage('Skenario B berhasil dihitung dan ditambahkan ke tabel perbandingan.', 'success');
                 }
             })
             .catch((error) => {
@@ -376,9 +398,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (error.errors) {
                     displayValidationErrors(error.errors);
-                    alert('Validasi Skenario B gagal. Periksa kembali input Anda.');
+                    setSkenarioBMessage('Validasi Skenario B gagal. Periksa kembali input Anda.', 'error');
                 } else {
-                    alert('Terjadi kesalahan saat menghitung skenario B.');
+                    setSkenarioBMessage('Terjadi kesalahan saat menghitung skenario B.', 'error');
                 }
             });
     };
@@ -388,7 +410,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         document.getElementById('net-profit').innerText = formatRupiah(summary.keuntungan_bersih_proyeksi);
         document.getElementById('final-cash-balance').innerText = formatRupiah(summary.saldo_kas_akhir);
-        document.getElementById('bep').innerText = `${summary.titik_impas_unit} Unit`;
+        document.getElementById('bep').innerText = formatUnit(summary.titik_impas_unit);
         document.getElementById('payback-period').innerText = summary.waktu_balik_modal;
         document.getElementById('last-update').innerHTML = `<strong>Diperbarui pada ${summary.diperbarui_pada}</strong>`;
         updateWarningCard(summary.cash_warning_message);
@@ -638,8 +660,15 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('volume_penjualan_skenario_b').value = state.lastInputs.volume_penjualan || '';
             dom.skenarioBContainer.classList.remove('hidden');
             dom.showSkenarioBButton.classList.add('hidden');
+            setSkenarioBMessage('', 'info');
         });
     }
+
+    dom.closeSkenarioBButton?.addEventListener('click', () => {
+        dom.skenarioBContainer?.classList.add('hidden');
+        dom.showSkenarioBButton?.classList.remove('hidden');
+        setSkenarioBMessage('', 'info');
+    });
 
     if (dom.formB) {
         dom.formB.addEventListener('submit', (event) => {

@@ -124,21 +124,21 @@ class SimulatorController extends Controller
 
         $results = [
             'summary' => [
-                'keuntungan_bersih_proyeksi' => number_format($totalKeuntunganAfterTax, 0, ',', '.'),
-                'margin_kontribusi_per_unit' => number_format($marginKontribusi, 0, ',', '.'),
-                'titik_impas_unit' => number_format($titikImpasUnit, 0, ',', '.'),
-                'waktu_balik_modal' => $waktuBalikModal, 
+                'keuntungan_bersih_proyeksi' => round($totalKeuntunganAfterTax),
+                'margin_kontribusi_per_unit' => round($marginKontribusi),
+                'titik_impas_unit' => (int) $titikImpasUnit,
+                'waktu_balik_modal' => $waktuBalikModal,
                 'diperbarui_pada' => Carbon::now()->isoFormat('D MMMM Y, H:mm') . " WITA",
-                'saldo_kas_akhir' => number_format($saldoKas, 0, ',', '.'),
+                'saldo_kas_akhir' => round($saldoKas),
                 'cash_warning_message' => $kasNegatifMessage,
             ],
             'proyeksi_bulanan' => $proyeksiBulanan,
             'skenario_perbandingan' => [
                 'skenario_a' => [
                     'nama' => 'Skenario Dasar (Input Anda)',
-                    'harga_jual' => number_format($hargaJual, 0, ',', '.'),
-                    'keuntungan_bersih_tahunan' => number_format($totalKeuntunganAfterTax, 0, ',', '.'),
-                    'saldo_kas_akhir' => number_format($saldoKas, 0, ',', '.'),
+                    'harga_jual' => round($hargaJual),
+                    'keuntungan_bersih_tahunan' => round($totalKeuntunganAfterTax),
+                    'saldo_kas_akhir' => round($saldoKas),
                 ],
                 'skenario_b' => null
             ]
