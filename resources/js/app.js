@@ -1,543 +1,656 @@
-// Baris ini mungkin sudah ada di app.js Anda.
 import './bootstrap';
 
-// Kita bungkus semua logika simulator di sini
-document.addEventListener('DOMContentLoaded', function () {
-    
-    // PENTING: AMBIL STATUS LOGIN DARI BLADE
-    const isLoggedIn = window.isLoggedIn; 
-    
-    const formA = document.getElementById('simulatorForm'); 
-    const formB = document.getElementById('skenarioBForm'); 
-    const skenarioBContainer = document.getElementById('skenarioBInputsContainer');
-    const showSkenarioBButton = document.getElementById('showSkenarioBForm');
-    
-    // Elemen Save/Load
-    const saveButton = document.getElementById('saveScenarioButton');
-    const loadButton = document.getElementById('loadScenarioButton');
-    const saveModal = document.getElementById('saveModal');
-    const loadModal = document.getElementById('loadModal');
-    const saveForm = document.getElementById('saveForm');
-    const closeSaveModal = document.getElementById('closeSaveModal');
-    const closeLoadModal = document.getElementById('closeLoadModal');
-    const savedScenariosDropdown = document.getElementById('savedScenariosDropdown');
-    const executeLoadButton = document.getElementById('executeLoadButton');
-    const loadingLoad = document.getElementById('loadingLoad');
-    const noScenariosMessage = document.getElementById('noScenariosMessage'); 
+document.addEventListener('DOMContentLoaded', () => {
+    const state = {
+        isLoggedIn: Boolean(window.isLoggedIn),
+        lastInputs: {},
+        hasLatestResult: false,
+        charts: {
+            keuntungan: null,
+            cashFlow: null,
+            costRevenue: null,
+        },
+    };
 
-    // Elemen Umum
-    const tabButtons = document.querySelectorAll('.tab-button');
-    const tabContents = document.querySelectorAll('.tab-content');
-    const stepNavButtons = document.querySelectorAll('.step-nav-button');
-    const resultsData = document.getElementById('results-data');
-    const loadingIndicator = document.getElementById('loadingIndicator');
-    const errorMessages = document.querySelectorAll('.error-message');
-    const warningCard = document.getElementById('cash-warning-card');
-    const warningMessage = document.getElementById('cash-warning-message');
+    const dom = {
+        formA: document.getElementById('simulatorForm'),
+        formB: document.getElementById('skenarioBForm'),
+        skenarioBContainer: document.getElementById('skenarioBInputsContainer'),
+        showSkenarioBButton: document.getElementById('showSkenarioBForm'),
+        saveButton: document.getElementById('saveScenarioButton'),
+        loadButton: document.getElementById('loadScenarioButton'),
+        loadModal: document.getElementById('loadModal'),
+        saveCard: document.getElementById('saveCard'),
+        saveForm: document.getElementById('saveForm'),
+        cancelSaveCard: document.getElementById('cancelSaveCard'),
+        closeSaveCard: document.getElementById('closeSaveCard'),
+        saveCardDismissArea: document.querySelector('[data-save-card-dismiss]'),
+        namaSkenarioInput: document.getElementById('nama_skenario'),
+        saveSummaryFields: document.querySelectorAll('[data-save-summary]'),
+        savedScenariosDropdown: document.getElementById('savedScenariosDropdown'),
+        executeLoadButton: document.getElementById('executeLoadButton'),
+        closeLoadModal: document.getElementById('closeLoadModal'),
+        loadingLoad: document.getElementById('loadingLoad'),
+        noScenariosMessage: document.getElementById('noScenariosMessage'),
+        tabButtons: document.querySelectorAll('.tab-button'),
+        tabContents: document.querySelectorAll('.tab-content'),
+        stepNavButtons: document.querySelectorAll('.step-nav-button'),
+        resultsData: document.getElementById('results-data'),
+        resultsContainer: document.getElementById('projection-results'),
+        loadingIndicator: document.getElementById('loadingIndicator'),
+        warningCard: document.getElementById('cash-warning-card'),
+        warningMessage: document.getElementById('cash-warning-message'),
+        errorMessages: document.querySelectorAll('.error-message'),
+        sliderGrowth: document.getElementById('tingkat_pertumbuhan'),
+        sliderInflasi: document.getElementById('inflasi_biaya'),
+    };
 
-    // Variabel state
-    let lastSkenarioAInputs = {};
-    let keuntunganChartInstance = null;
-    let cashFlowChartInstance = null;
-    let costRevenueChartInstance = null;
-    let currentStep = 1;
+    if (!dom.formA) {
+        return;
+    }
 
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+    const numberFormatter = new Intl.NumberFormat('id-ID');
+    const setHidden = (element, hidden) => {
+        if (!element) return;
+        element.classList.toggle('hidden', hidden);
+    };
+    const disableElement = (element, disabled) => {
+        if (element) {
+            element.disabled = disabled;
+        }
+    };
+    const formatRupiah = (value) => `Rp. ${numberFormatter.format(Math.round(Number(value) || 0))}`;
+    const formatUnit = (value) => `${numberFormatter.format(Math.round(Number(value) || 0))} Unit`;
 
-    // --- FUNGSI NAVIGASI & SLIDER ---
-
-    function showStep(step) {
-        tabContents.forEach(content => content.classList.remove('active'));
-        tabButtons.forEach(button => {
+    const showStep = (step) => {
+        dom.tabContents.forEach((content) => content.classList.remove('active'));
+        dom.tabButtons.forEach((button) => {
             button.classList.remove('text-blue-600', 'border-blue-600');
             button.classList.add('text-gray-500', 'border-transparent');
         });
 
-        document.getElementById(`step-${step}`).classList.add('active');
-        
+        const activeTab = document.getElementById(`step-${step}`);
         const activeButton = document.querySelector(`.tab-button[data-step="${step}"]`);
+
+        if (activeTab) activeTab.classList.add('active');
         if (activeButton) {
             activeButton.classList.remove('text-gray-500', 'border-transparent');
             activeButton.classList.add('text-blue-600', 'border-blue-600');
         }
-        currentStep = step;
-    }
+    };
 
-    // Event listener untuk tombol navigasi tab
-    tabButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            const step = parseInt(button.getAttribute('data-step'));
-            showStep(step);
-        });
-    });
+    const updateSliderPreview = (slider, targetId) => {
+        if (!slider) return;
+        const preview = document.getElementById(targetId);
+        const updateText = () => {
+            if (preview) {
+                preview.innerText = `${slider.value}%`;
+            }
+        };
+        slider.addEventListener('input', updateText);
+        updateText();
+    };
 
-    // Event listener untuk tombol Lanjut/Kembali
-    stepNavButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            const nextStep = button.getAttribute('data-next');
-            const prevStep = button.getAttribute('data-prev');
-            
-            if (nextStep) {
-                showStep(parseInt(nextStep));
-            } else if (prevStep) {
-                showStep(parseInt(prevStep));
+    const clearValidationErrors = () => {
+        dom.errorMessages.forEach((el) => (el.innerText = ''));
+    };
+
+    const displayValidationErrors = (errors) => {
+        clearValidationErrors();
+        Object.entries(errors).forEach(([field, messages]) => {
+            let target = document.getElementById(`error-${field}`);
+
+            if (field === 'harga_jual' && dom.skenarioBContainer && !dom.skenarioBContainer.classList.contains('hidden')) {
+                target = document.getElementById('error-harga_jual_skenario_b');
+            }
+            if (field === 'volume_penjualan' && dom.skenarioBContainer && !dom.skenarioBContainer.classList.contains('hidden')) {
+                target = document.getElementById('error-volume_penjualan_skenario_b');
+            }
+
+            if (target) {
+                target.innerText = messages[0];
             }
         });
-    });
+    };
 
-    // Sinkronisasi Slider
-    const slider = document.getElementById('tingkat_pertumbuhan');
-    if (slider) {
-        slider.addEventListener('input', function() {
-            document.getElementById('pertumbuhan_val').innerText = this.value + '%';
+    const destroyChart = (chartInstance) => {
+        if (chartInstance) {
+            chartInstance.destroy();
+        }
+    };
+
+    const drawKeuntunganChart = (labels, data) => {
+        const ctx = document.getElementById('keuntunganChart')?.getContext('2d');
+        if (!ctx) return;
+        destroyChart(state.charts.keuntungan);
+        state.charts.keuntungan = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [
+                    {
+                        label: 'Laba Bersih Setelah Pajak (Rp)',
+                        data,
+                        backgroundColor: 'rgba(52, 211, 153, 0.8)',
+                        borderColor: 'rgba(52, 211, 153, 1)',
+                        borderWidth: 1,
+                    },
+                ],
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: 'Laba Bersih (Rp)' },
+                    },
+                },
+                plugins: {
+                    legend: { display: false },
+                    title: { display: true, text: 'Proyeksi Laba Bersih Bulanan (Setelah Pajak)' },
+                },
+            },
         });
-    }
-    
-    const inflasiSlider = document.getElementById('inflasi_biaya');
-    if (inflasiSlider) {
-        inflasiSlider.addEventListener('input', function() {
-            document.getElementById('inflasi_val').innerText = this.value + '%';
+    };
+
+    const drawCashFlowChart = (labels, data) => {
+        const ctx = document.getElementById('cashFlowChart')?.getContext('2d');
+        if (!ctx) return;
+        destroyChart(state.charts.cashFlow);
+        state.charts.cashFlow = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [
+                    {
+                        label: 'Saldo Kas Bulanan (Rp)',
+                        data,
+                        backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 2,
+                        tension: 0.3,
+                        fill: true,
+                    },
+                ],
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: { title: { display: true, text: 'Saldo Kas (Rp)' } },
+                },
+                plugins: {
+                    title: { display: true, text: 'Proyeksi Saldo Arus Kas Bulanan (Memperhitungkan CAPEX & Modal Kerja)' },
+                },
+            },
         });
-    }
-    showStep(1); // Mulai dari langkah 1
+    };
 
+    const drawCostRevenueChart = (labels, pendapatanData, biayaTotalData) => {
+        const ctx = document.getElementById('costRevenueChart')?.getContext('2d');
+        if (!ctx) return;
+        destroyChart(state.charts.costRevenue);
+        state.charts.costRevenue = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [
+                    {
+                        label: 'Pendapatan (Rp)',
+                        data: pendapatanData,
+                        backgroundColor: 'rgba(59, 130, 246, 0.5)',
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        borderWidth: 2,
+                        tension: 0.1,
+                        fill: false,
+                    },
+                    {
+                        label: 'Total Biaya (Variabel + Tetap + Pajak) (Rp)',
+                        data: biayaTotalData,
+                        backgroundColor: 'rgba(239, 68, 68, 0.5)',
+                        borderColor: 'rgba(239, 68, 68, 1)',
+                        borderWidth: 2,
+                        tension: 0.1,
+                        fill: false,
+                    },
+                ],
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: 'Jumlah (Rp)' },
+                    },
+                },
+                plugins: {
+                    title: { display: true, text: 'Pendapatan vs. Total Biaya Bulanan (Termasuk Inflasi & Pajak)' },
+                },
+            },
+        });
+    };
 
-    // --- FUNGSI CHART & VALIDASI ---
-    
-    function drawKeuntunganChart(labels, data) { 
-        const ctx = document.getElementById('keuntunganChart').getContext('2d');
-        if (keuntunganChartInstance) { keuntunganChartInstance.destroy(); }
-        keuntunganChartInstance = new Chart(ctx, { type: 'bar', data: { labels: labels, datasets: [{ label: 'Laba Bersih Setelah Pajak (Rp)', data: data, backgroundColor: 'rgba(52, 211, 153, 0.8)', borderColor: 'rgba(52, 211, 153, 1)', borderWidth: 1 }] }, options: { responsive: true, scales: { y: { beginAtZero: true, title: { display: true, text: 'Laba Bersih (Rp)' } } }, plugins: { legend: { display: false }, title: { display: true, text: 'Proyeksi Laba Bersih Bulanan (Setelah Pajak)' } } } });
-    }
-    function drawCashFlowChart(labels, data) { 
-        const ctx = document.getElementById('cashFlowChart').getContext('2d');
-        if (cashFlowChartInstance) { cashFlowChartInstance.destroy(); }
-        cashFlowChartInstance = new Chart(ctx, { type: 'line', data: { labels: labels, datasets: [{ label: 'Saldo Kas Bulanan (Rp)', data: data, backgroundColor: 'rgba(75, 192, 192, 0.5)', borderColor: 'rgba(75, 192, 192, 1)', borderWidth: 2, tension: 0.3, fill: true }] }, options: { responsive: true, scales: { y: { title: { display: true, text: 'Saldo Kas (Rp)' } } }, plugins: { title: { display: true, text: 'Proyeksi Saldo Arus Kas Bulanan (Memperhitungkan CAPEX & Modal Kerja)' } } } });
-    }
-    function drawCostRevenueChart(labels, pendapatanData, biayaTotalData) { 
-        const ctx = document.getElementById('costRevenueChart').getContext('2d');
-        if (costRevenueChartInstance) { costRevenueChartInstance.destroy(); }
-        costRevenueChartInstance = new Chart(ctx, { type: 'line', data: { labels: labels, datasets: [ { label: 'Pendapatan (Rp)', data: pendapatanData, backgroundColor: 'rgba(59, 130, 246, 0.5)', borderColor: 'rgba(59, 130, 246, 1)', borderWidth: 2, tension: 0.1, fill: false }, { label: 'Total Biaya (Variabel + Tetap + Pajak) (Rp)', data: biayaTotalData, backgroundColor: 'rgba(239, 68, 68, 0.5)', borderColor: 'rgba(239, 68, 68, 1)', borderWidth: 2, tension: 0.1, fill: false } ] }, options: { responsive: true, scales: { y: { beginAtZero: true, title: { display: true, text: 'Jumlah (Rp)' } } }, plugins: { title: { display: true, text: 'Pendapatan vs. Total Biaya Bulanan (Termasuk Inflasi & Pajak)' } } } });
-    }
-    
-    function fillForm(data) {
-        for (const key in data) {
+    const updateWarningCard = (message) => {
+        if (!dom.warningCard || !dom.warningMessage) return;
+        dom.warningMessage.innerText = message;
+        if (message.includes('negatif')) {
+            dom.warningCard.classList.remove('hidden');
+            dom.warningCard.classList.replace('bg-yellow-100', 'bg-red-100');
+            dom.warningCard.classList.replace('border-yellow-500', 'border-red-500');
+            dom.warningMessage.classList.replace('text-yellow-800', 'text-red-800');
+        } else {
+            dom.warningCard.classList.add('hidden');
+            dom.warningCard.classList.replace('bg-red-100', 'bg-yellow-100');
+            dom.warningCard.classList.replace('border-red-500', 'border-yellow-500');
+            dom.warningMessage.classList.replace('text-red-800', 'text-yellow-800');
+        }
+    };
+
+    const buildComparisonTable = (skenario) => {
+        const tableBody = document.getElementById('comparison-table-body');
+        const header = document.getElementById('skenario-b-header');
+        if (!tableBody || !header) return;
+
+        tableBody.innerHTML = '';
+        header.innerText = 'Skenario Lain (Belum Dihitung)';
+
+        const rows = [
+            { label: 'Harga Jual per Unit (Rp)', key: 'harga_jual' },
+            { label: 'Keuntungan Bersih Tahunan (Rp)', key: 'keuntungan_bersih_tahunan' },
+            { label: 'Saldo Kas Akhir Tahun (Rp)', key: 'saldo_kas_akhir' },
+        ];
+
+        rows.forEach((row) => {
+            const tr = tableBody.insertRow();
+            tr.innerHTML = `
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${row.label}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Rp. ${skenario.skenario_a[row.key]}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">-</td>
+            `;
+        });
+    };
+
+    const updateSaveSummary = () => {
+        const formatters = {
+            harga_jual: formatRupiah,
+            modal_kerja: formatRupiah,
+            capex: formatRupiah,
+            volume_penjualan: formatUnit,
+        };
+        dom.saveSummaryFields.forEach((field) => {
+            const key = field.dataset.saveSummary;
+            const value = state.lastInputs[key];
+            field.innerText = formatters[key] ? formatters[key](value) : numberFormatter.format(Number(value) || 0);
+        });
+    };
+
+    const openSaveCard = () => {
+        if (!state.hasLatestResult) {
+            alert('Jalankan simulasi terlebih dahulu sebelum menyimpan skenario.');
+            return;
+        }
+        updateSaveSummary();
+        setHidden(dom.saveCard, false);
+        dom.namaSkenarioInput?.focus();
+    };
+
+    const closeSaveCard = () => {
+        dom.saveForm?.reset();
+        setHidden(dom.saveCard, true);
+    };
+
+    const fillForm = (data) => {
+        Object.entries(data).forEach(([key, value]) => {
             const input = document.getElementById(key);
             if (input) {
-                input.value = data[key];
-                
+                input.value = value;
                 if (key === 'tingkat_pertumbuhan') {
-                    document.getElementById('pertumbuhan_val').innerText = data[key] + '%';
+                    document.getElementById('pertumbuhan_val').innerText = `${value}%`;
                 }
                 if (key === 'inflasi_biaya') {
-                    document.getElementById('inflasi_val').innerText = data[key] + '%';
+                    document.getElementById('inflasi_val').innerText = `${value}%`;
                 }
             }
+        });
+        alert('Skenario berhasil dimuat ke dalam form. Jalankan simulasi untuk melihat hasilnya.');
+        setHidden(dom.resultsData, true);
+        state.hasLatestResult = false;
+        if (dom.saveButton) {
+            disableElement(dom.saveButton, true);
         }
-        alert("Skenario berhasil dimuat ke dalam form.");
-        loadModal.classList.add('hidden');
-        showStep(1); 
-    }
-    
-    function displayValidationErrors(errors) {
-        errorMessages.forEach(el => el.innerText = '');
+        dom.showSkenarioBButton?.classList.add('hidden');
+        dom.skenarioBContainer?.classList.add('hidden');
+        showStep(1);
+    };
 
-        for (const key in errors) {
-            if (errors.hasOwnProperty(key)) {
-                let errorElement = document.getElementById(`error-${key}`);
-                
-                // Logic untuk mengarahkan pesan error ke input yang benar (Skenario A/B atau Modal Simpan)
-                if (key === 'harga_jual') {
-                    errorElement = document.getElementById('skenarioBInputsContainer') && !document.getElementById('skenarioBInputsContainer').classList.contains('hidden') 
-                        ? document.getElementById(`error-harga_jual_skenario_b`)
-                        : document.getElementById(`error-${key}`);
-                } else if (key === 'volume_penjualan') {
-                    errorElement = document.getElementById('skenarioBInputsContainer') && !document.getElementById('skenarioBInputsContainer').classList.contains('hidden') 
-                        ? document.getElementById(`error-volume_penjualan_skenario_b`)
-                        : document.getElementById(`error-${key}`);
-                } else if (key === 'nama_skenario') {
-                    errorElement = document.getElementById(`error-${key}`);
-                }
-                
-                if (errorElement) {
-                    errorElement.innerText = errors[key][0];
-                }
-            }
-        }
-    }
-    
-    function calculateSkenarioB(formData) {
-        const calculateUrl = formA.dataset.calculateUrl; 
+    const calculateSkenarioB = (formData) => {
+        const calculateUrl = dom.formA.dataset.calculateUrl;
+        setHidden(dom.loadingIndicator, false);
+        dom.skenarioBContainer.style.opacity = '0.5';
 
-        loadingIndicator.classList.remove('hidden');
-        skenarioBContainer.style.opacity = '0.5';
-        
         fetch(calculateUrl, {
             method: 'POST',
             body: formData,
             headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                'Accept': 'application/json'
-            }
+                'X-CSRF-TOKEN': csrfToken,
+                Accept: 'application/json',
+            },
         })
-        .then(response => {
-            if (!response.ok) {
-                return response.json().then(err => { throw err; });
-            }
-            return response.json();
-        })
-        .then(data => {
-            loadingIndicator.classList.add('hidden');
-            skenarioBContainer.style.opacity = '1';
-
-            if (data.status === 'success') {
-                const summary = data.data.summary;
-                
-                document.getElementById('skenario-b-header').innerText = 'Skenario B (Revisi)';
-                
-                const tableBody = document.getElementById('comparison-table-body');
-                const rows = tableBody.querySelectorAll('tr');
-
-                const hargaJualSkenarioB = document.getElementById('harga_jual_skenario_b').value;
-
-                const skenarioBData = {
-                    'harga_jual': hargaJualSkenarioB, 
-                    'keuntungan_bersih_tahunan': summary.keuntungan_bersih_proyeksi,
-                    'saldo_kas_akhir': summary.saldo_kas_akhir,
-                };
-                
-                const metrikKeys = ['harga_jual', 'keuntungan_bersih_tahunan', 'saldo_kas_akhir'];
-
-                rows.forEach((row, index) => {
-                    const key = metrikKeys[index];
-                    if (key) {
-                        const cellB = row.cells[2];
-                        const value = skenarioBData[key] !== undefined ? skenarioBData[key] : '-';
-                        cellB.innerHTML = `Rp. ${value}`;
-                    }
-                });
-
-                skenarioBContainer.classList.add('hidden');
-                showSkenarioBButton.classList.remove('hidden');
-                alert('Skenario B berhasil dihitung dan ditambahkan ke tabel perbandingan.');
-
-            }
-        })
-        .catch(error => {
-            console.error('Error Skenario B:', error);
-            loadingIndicator.classList.add('hidden');
-            skenarioBContainer.style.opacity = '1';
-            
-            if (error.errors) {
-                displayValidationErrors(error.errors);
-                alert('Validasi Skenario B Gagal! Silakan periksa kolom yang ditandai.');
-            } else {
-                alert('Terjadi kesalahan saat mengirim data skenario B ke server.');
-            }
-        });
-    }
-
-
-    // --- LOGIKA UTAMA & EVENT LISTENERS ---
-
-    if (formA) {
-        
-        const calculateUrl = formA.dataset.calculateUrl; 
-        
-        // Cek apakah elemen ada sebelum mencoba mengakses properti data-url
-        const saveUrl = saveButton ? saveButton.dataset.saveUrl : null;
-        const listUrl = loadButton ? loadButton.dataset.listUrl : null;
-        const loadBaseUrl = executeLoadButton.dataset.loadUrl;
-
-
-        // --- HANDLER Skenario A (Perhitungan) ---
-        formA.addEventListener('submit', function (e) {
-            e.preventDefault();
-            
-            // 1. Simpan semua input Skenario A sebelum submit
-            lastSkenarioAInputs = {};
-            const formData = new FormData(formA);
-            for (let [key, value] of formData.entries()) {
-                if (key !== '_token') { 
-                    lastSkenarioAInputs[key] = value;
-                }
-            }
-            
-            errorMessages.forEach(el => el.innerText = '');
-            const resultsContainer = document.getElementById('projection-results');
-
-            loadingIndicator.classList.remove('hidden');
-            resultsData.classList.add('hidden');
-            resultsContainer.style.opacity = '0.5';
-
-            fetch(calculateUrl, {
-                method: 'POST',
-                body: formData,
-                headers: { 
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                    'Accept': 'application/json'
-                }
-            })
-            .then(response => { 
+            .then((response) => {
                 if (!response.ok) {
-                    return response.json().then(err => { throw err; });
+                    return response.json().then((err) => {
+                        throw err;
+                    });
                 }
                 return response.json();
             })
-            .then(data => {
-                loadingIndicator.classList.add('hidden');
-                resultsContainer.style.opacity = '1';
-                
+            .then((data) => {
+                setHidden(dom.loadingIndicator, true);
+                dom.skenarioBContainer.style.opacity = '1';
+
                 if (data.status === 'success') {
                     const summary = data.data.summary;
-                    const proyeksi = data.data.proyeksi_bulanan;
-                    const skenario = data.data.skenario_perbandingan;
-                    
-                    // 1. Perbarui Ringkasan Metrik Kunci dan Peringatan Kas
-                    document.getElementById('net-profit').innerText = `Rp. ${summary.keuntungan_bersih_proyeksi}`;
-                    document.getElementById('final-cash-balance').innerText = `Rp. ${summary.saldo_kas_akhir}`; 
-                    document.getElementById('bep').innerText = `${summary.titik_impas_unit} Unit`;
-                    document.getElementById('payback-period').innerText = summary.waktu_balik_modal;
-                    document.getElementById('last-update').innerHTML = `<strong>Diperbarui pada ${summary.diperbarui_pada}</strong>`;
-                    
-                    warningMessage.innerText = summary.cash_warning_message;
-                    if (summary.cash_warning_message.includes('negatif')) {
-                        warningCard.classList.remove('hidden');
-                        warningCard.classList.replace('bg-yellow-100', 'bg-red-100');
-                        warningCard.classList.replace('border-yellow-500', 'border-red-500');
-                        warningMessage.classList.replace('text-yellow-800', 'text-red-800');
-                    } else {
-                        warningCard.classList.add('hidden');
-                        warningCard.classList.replace('bg-red-100', 'bg-yellow-100'); 
-                        warningCard.classList.replace('border-red-500', 'border-yellow-500'); 
-                        warningMessage.classList.replace('text-red-800', 'text-yellow-800');
-                    }
-                    
-                    // 2. Siapkan data dan Logika gambar grafik
-                    const chartLabels = proyeksi.map(p => p.bulan);
-                    const chartDataKeuntungan = proyeksi.map(p => p.keuntungan_bersih);
-                    drawKeuntunganChart(chartLabels, chartDataKeuntungan); 
-                    const chartDataSaldoKas = proyeksi.map(p => p.saldo_kas);
-                    drawCashFlowChart(chartLabels, chartDataSaldoKas); 
-                    const chartDataPendapatan = proyeksi.map(p => p.pendapatan);
-                    const chartDataTotalBiaya = proyeksi.map(p => p.biaya_variabel + p.biaya_tetap + p.pajak);
-                    drawCostRevenueChart(chartLabels, chartDataPendapatan, chartDataTotalBiaya);
+                    document.getElementById('skenario-b-header').innerText = 'Skenario B (Revisi)';
+                    const tableRows = document.querySelectorAll('#comparison-table-body tr');
+                    const mapping = {
+                        harga_jual: document.getElementById('harga_jual_skenario_b').value,
+                        keuntungan_bersih_tahunan: summary.keuntungan_bersih_proyeksi,
+                        saldo_kas_akhir: summary.saldo_kas_akhir,
+                    };
 
-                    // 3. Buat Tabel Perbandingan Skenario A
-                    const tableBody = document.getElementById('comparison-table-body');
-                    tableBody.innerHTML = ''; 
-                    document.getElementById('skenario-b-header').innerText = 'Skenario Lain (Belum Dihitung)';
-                    
-                    const metrik = [
-                        { label: 'Harga Jual per Unit (Rp)', key: 'harga_jual' },
-                        { label: 'Keuntungan Bersih Tahunan (Rp)', key: 'keuntungan_bersih_tahunan' },
-                        { label: 'Saldo Kas Akhir Tahun (Rp)', key: 'saldo_kas_akhir' }
-                    ];
-
-                    metrik.forEach(m => {
-                        const row = tableBody.insertRow();
-                        row.innerHTML = `
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${m.label}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Rp. ${skenario.skenario_a[m.key]}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">-</td> 
-                        `;
+                    const keys = ['harga_jual', 'keuntungan_bersih_tahunan', 'saldo_kas_akhir'];
+                    tableRows.forEach((row, index) => {
+                        const key = keys[index];
+                        row.children[2].innerHTML = `Rp. ${mapping[key] ?? '-'}`;
                     });
 
-                    // Tampilkan kartu hasil & Tombol Skenario B
-                    resultsData.classList.remove('hidden');
-                    showSkenarioBButton.classList.remove('hidden'); 
-                    
-                    // AKTIFKAN TOMBOL SIMPAN JIKA USER SUDAH LOGIN
-                    if (isLoggedIn && saveButton) { 
-                         saveButton.disabled = false; 
-                    }
+                    dom.skenarioBContainer.classList.add('hidden');
+                    dom.showSkenarioBButton?.classList.remove('hidden');
+                    alert('Skenario B berhasil dihitung dan ditambahkan ke tabel perbandingan.');
                 }
             })
-            .catch(error => {
+            .catch((error) => {
+                console.error('Error Skenario B:', error);
+                setHidden(dom.loadingIndicator, true);
+                dom.skenarioBContainer.style.opacity = '1';
+
+                if (error.errors) {
+                    displayValidationErrors(error.errors);
+                    alert('Validasi Skenario B gagal. Periksa kembali input Anda.');
+                } else {
+                    alert('Terjadi kesalahan saat menghitung skenario B.');
+                }
+            });
+    };
+
+    const handleCalculationSuccess = (payload) => {
+        const { summary, proyeksi_bulanan: proyeksi, skenario_perbandingan: skenario } = payload;
+
+        document.getElementById('net-profit').innerText = formatRupiah(summary.keuntungan_bersih_proyeksi);
+        document.getElementById('final-cash-balance').innerText = formatRupiah(summary.saldo_kas_akhir);
+        document.getElementById('bep').innerText = `${summary.titik_impas_unit} Unit`;
+        document.getElementById('payback-period').innerText = summary.waktu_balik_modal;
+        document.getElementById('last-update').innerHTML = `<strong>Diperbarui pada ${summary.diperbarui_pada}</strong>`;
+        updateWarningCard(summary.cash_warning_message);
+
+        const labels = proyeksi.map((item) => item.bulan);
+        drawKeuntunganChart(labels, proyeksi.map((item) => item.keuntungan_bersih));
+        drawCashFlowChart(labels, proyeksi.map((item) => item.saldo_kas));
+        drawCostRevenueChart(
+            labels,
+            proyeksi.map((item) => item.pendapatan),
+            proyeksi.map((item) => item.biaya_variabel + item.biaya_tetap + item.pajak)
+        );
+
+        buildComparisonTable(skenario);
+        setHidden(dom.resultsData, false);
+        dom.showSkenarioBButton?.classList.remove('hidden');
+
+        state.hasLatestResult = true;
+        if (state.isLoggedIn && dom.saveButton) {
+            disableElement(dom.saveButton, false);
+        }
+    };
+
+    // Tab events
+    dom.tabButtons.forEach((button) => {
+        button.addEventListener('click', () => {
+            const step = Number(button.dataset.step);
+            showStep(step);
+        });
+    });
+
+    dom.stepNavButtons.forEach((button) => {
+        button.addEventListener('click', () => {
+            const nextStep = button.getAttribute('data-next');
+            const prevStep = button.getAttribute('data-prev');
+            if (nextStep) showStep(Number(nextStep));
+            if (prevStep) showStep(Number(prevStep));
+        });
+    });
+
+    showStep(1);
+    updateSliderPreview(dom.sliderGrowth, 'pertumbuhan_val');
+    updateSliderPreview(dom.sliderInflasi, 'inflasi_val');
+
+    const calculateUrl = dom.formA.dataset.calculateUrl;
+    const saveUrl = dom.saveButton?.dataset.saveUrl;
+    const listUrl = dom.loadButton?.dataset.listUrl;
+    const loadBaseUrl = dom.executeLoadButton?.dataset.loadUrl;
+
+    dom.formA.addEventListener('submit', (event) => {
+        event.preventDefault();
+        clearValidationErrors();
+
+        const formData = new FormData(dom.formA);
+        state.lastInputs = {};
+        for (const [key, value] of formData.entries()) {
+            if (key !== '_token') {
+                state.lastInputs[key] = value;
+            }
+        }
+
+        dom.showSkenarioBButton?.classList.add('hidden');
+        dom.skenarioBContainer?.classList.add('hidden');
+
+        setHidden(dom.loadingIndicator, false);
+        setHidden(dom.resultsData, true);
+        if (dom.resultsContainer) {
+            dom.resultsContainer.style.opacity = '0.5';
+        }
+
+        fetch(calculateUrl, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRF-TOKEN': csrfToken,
+                Accept: 'application/json',
+            },
+        })
+            .then((response) => {
+                if (!response.ok) {
+                    return response.json().then((err) => {
+                        throw err;
+                    });
+                }
+                return response.json();
+            })
+            .then((data) => {
+                setHidden(dom.loadingIndicator, true);
+                if (dom.resultsContainer) {
+                    dom.resultsContainer.style.opacity = '1';
+                }
+                if (data.status === 'success') {
+                    handleCalculationSuccess(data.data);
+                }
+            })
+            .catch((error) => {
                 console.error('Error Calculate:', error);
-                loadingIndicator.classList.add('hidden');
-                resultsContainer.style.opacity = '1';
-                
+                setHidden(dom.loadingIndicator, true);
+                if (dom.resultsContainer) {
+                    dom.resultsContainer.style.opacity = '1';
+                }
+                state.hasLatestResult = false;
+                if (dom.saveButton) {
+                    disableElement(dom.saveButton, true);
+                }
+
                 if (error.errors) {
                     displayValidationErrors(error.errors);
                     const firstErrorField = Object.keys(error.errors)[0];
-                    const firstErrorInput = document.getElementById(firstErrorField);
-                    if(firstErrorInput) {
-                        const stepContainer = firstErrorInput.closest('.tab-content');
+                    const firstInput = document.getElementById(firstErrorField);
+                    if (firstInput) {
+                        const stepContainer = firstInput.closest('.tab-content');
                         if (stepContainer) {
-                            const stepNumber = stepContainer.id.replace('step-', '');
-                            showStep(parseInt(stepNumber));
+                            const stepNumber = Number(stepContainer.id.replace('step-', ''));
+                            showStep(stepNumber);
                         }
                     }
-                    alert('Validasi Gagal! Silakan periksa kolom yang ditandai.');
+                    alert('Validasi gagal. Mohon periksa kolom yang ditandai.');
                 } else {
                     alert('Terjadi kesalahan saat mengirim data ke server.');
                 }
             });
-        });
+    });
 
-        // --- HANDLER MODAL SIMPAN (Hanya aktif jika login) ---
-        if (isLoggedIn && saveButton) {
-            const saveUrl = saveButton.dataset.saveUrl;
+    if (state.isLoggedIn && dom.saveButton && dom.saveForm && saveUrl) {
+        dom.saveButton.addEventListener('click', openSaveCard);
+        [dom.cancelSaveCard, dom.closeSaveCard].forEach((button) => button?.addEventListener('click', closeSaveCard));
+        dom.saveCardDismissArea?.addEventListener('click', closeSaveCard);
 
-            saveButton.addEventListener('click', function() {
-                saveModal.classList.remove('hidden');
-                document.getElementById('nama_skenario').focus();
+        dom.saveForm.addEventListener('submit', (event) => {
+            event.preventDefault();
+            if (!state.hasLatestResult) {
+                alert('Jalankan simulasi terlebih dahulu.');
+                return;
+            }
+
+            const finalSaveData = new FormData();
+            Object.entries(state.lastInputs).forEach(([key, value]) => {
+                finalSaveData.append(key, value);
             });
-            closeSaveModal.addEventListener('click', function() {
-                saveModal.classList.add('hidden');
-            });
-            
-            saveForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                const finalSaveData = new FormData();
-                for (const key in lastSkenarioAInputs) {
-                    finalSaveData.append(key, lastSkenarioAInputs[key]);
-                }
-                finalSaveData.append('nama_skenario', document.getElementById('nama_skenario').value);
-                finalSaveData.append('_token', document.querySelector('meta[name="csrf-token"]').content);
+            finalSaveData.append('nama_skenario', dom.namaSkenarioInput.value.trim());
+            finalSaveData.append('_token', csrfToken);
 
-                fetch(saveUrl, {
-                    method: 'POST',
-                    body: finalSaveData,
-                    headers: { 'Accept': 'application/json' }
-                })
-                .then(response => {
+            fetch(saveUrl, {
+                method: 'POST',
+                body: finalSaveData,
+                headers: { Accept: 'application/json' },
+            })
+                .then((response) => {
                     if (!response.ok) {
-                        return response.json().then(err => { throw err; });
+                        return response.json().then((err) => {
+                            throw err;
+                        });
                     }
                     return response.json();
                 })
-                .then(data => {
+                .then((data) => {
                     if (data.status === 'success') {
                         alert(data.message);
-                        saveModal.classList.add('hidden');
-                        document.getElementById('nama_skenario').value = '';
-                        saveButton.disabled = true; 
+                        closeSaveCard();
+                        state.hasLatestResult = false;
+                        disableElement(dom.saveButton, true);
                     }
                 })
-                .catch(error => {
+                .catch((error) => {
                     console.error('Error Save:', error);
                     if (error.errors) {
                         displayValidationErrors(error.errors);
                     } else {
-                        alert('Gagal menyimpan skenario ke server.');
+                        alert('Gagal menyimpan skenario.');
                     }
                 });
-            });
-        }
+        });
+    }
 
+    if (state.isLoggedIn && dom.loadButton && listUrl && loadBaseUrl) {
+        const fetchSavedScenarios = () => {
+            setHidden(dom.loadingLoad, false);
+            setHidden(dom.noScenariosMessage, true);
+            disableElement(dom.executeLoadButton, true);
+            dom.savedScenariosDropdown.innerHTML = '<option value="">-- Pilih Skenario --</option>';
 
-        // --- HANDLER MODAL MUAT (Hanya aktif jika login) ---
-        if (isLoggedIn && loadButton) {
-            const listUrl = loadButton.dataset.listUrl;
-            const loadBaseUrl = executeLoadButton.dataset.loadUrl;
-
-            loadButton.addEventListener('click', function() {
-                loadModal.classList.remove('hidden');
-                fetchSavedScenarios();
-            });
-            closeLoadModal.addEventListener('click', function() {
-                loadModal.classList.add('hidden');
-            });
-            
-            function fetchSavedScenarios() {
-                loadingLoad.classList.remove('hidden');
-                noScenariosMessage.classList.add('hidden'); 
-                executeLoadButton.disabled = true;
-                savedScenariosDropdown.innerHTML = '<option value="">-- Pilih Skenario --</option>';
-
-                fetch(listUrl, { headers: { 'Accept': 'application/json' } })
-                .then(res => res.json())
-                .then(data => {
-                    loadingLoad.classList.add('hidden');
+            fetch(listUrl, { headers: { Accept: 'application/json' } })
+                .then((response) => response.json())
+                .then((data) => {
+                    setHidden(dom.loadingLoad, true);
                     if (data.status === 'success' && data.data.length > 0) {
-                        data.data.forEach(sim => {
+                        data.data.forEach((sim) => {
                             const option = document.createElement('option');
                             option.value = sim.id;
                             option.innerText = `${sim.nama_skenario} (${new Date(sim.created_at).toLocaleDateString()})`;
-                            savedScenariosDropdown.appendChild(option);
+                            dom.savedScenariosDropdown.appendChild(option);
                         });
                     } else {
-                         noScenariosMessage.classList.remove('hidden'); 
-                         savedScenariosDropdown.innerHTML = '<option value="">-- Tidak ada skenario tersimpan --</option>';
+                        setHidden(dom.noScenariosMessage, false);
+                        dom.savedScenariosDropdown.innerHTML = '<option value="">-- Tidak ada skenario tersimpan --</option>';
                     }
                 })
-                .catch(err => {
-                    loadingLoad.classList.add('hidden');
-                    console.error('Failed to fetch list:', err);
+                .catch((error) => {
+                    console.error('Failed to fetch list:', error);
+                    setHidden(dom.loadingLoad, true);
                     alert('Gagal memuat daftar skenario.');
                 });
-            }
-            
-            savedScenariosDropdown.addEventListener('change', function() {
-                executeLoadButton.disabled = !this.value;
-            });
+        };
 
-            executeLoadButton.addEventListener('click', function() {
-                const simulationId = savedScenariosDropdown.value;
-                if (!simulationId) return;
+        dom.loadButton.addEventListener('click', () => {
+            setHidden(dom.loadModal, false);
+            fetchSavedScenarios();
+        });
+        dom.closeLoadModal?.addEventListener('click', () => setHidden(dom.loadModal, true));
 
-                const loadSpecificUrl = `${loadBaseUrl}/${simulationId}`;
+        dom.savedScenariosDropdown.addEventListener('change', (event) => {
+            disableElement(dom.executeLoadButton, !event.target.value);
+        });
 
-                loadingLoad.classList.remove('hidden');
-                executeLoadButton.disabled = true;
+        dom.executeLoadButton.addEventListener('click', () => {
+            const simulationId = dom.savedScenariosDropdown.value;
+            if (!simulationId) return;
+            const url = `${loadBaseUrl}/${simulationId}`;
+            setHidden(dom.loadingLoad, false);
+            disableElement(dom.executeLoadButton, true);
 
-                fetch(loadSpecificUrl, { headers: { 'Accept': 'application/json' } })
-                .then(res => res.json())
-                .then(data => {
+            fetch(url, { headers: { Accept: 'application/json' } })
+                .then((response) => response.json())
+                .then((data) => {
                     if (data.status === 'success') {
                         fillForm(data.data);
-                        resultsData.classList.add('hidden');
-                        saveButton.disabled = false; // Aktifkan lagi tombol simpan setelah form diisi
+                        setHidden(dom.loadModal, true);
                     } else {
                         alert(data.message);
                     }
-                    loadingLoad.classList.add('hidden');
-                    executeLoadButton.disabled = false;
+                    setHidden(dom.loadingLoad, true);
+                    disableElement(dom.executeLoadButton, false);
                 })
-                .catch(err => {
-                    console.error('Error Load:', err);
-                    loadingLoad.classList.add('hidden');
-                    executeLoadButton.disabled = false;
+                .catch((error) => {
+                    console.error('Error Load:', error);
+                    setHidden(dom.loadingLoad, true);
+                    disableElement(dom.executeLoadButton, false);
                     alert('Terjadi kesalahan saat memuat data skenario.');
                 });
-            });
-        }
-        
-        // --- HANDLER SKENARIO B ---
-        if (showSkenarioBButton) {
-            showSkenarioBButton.addEventListener('click', function() {
-                // Logika tampil form Skenario B
-                document.getElementById('harga_jual_skenario_b').value = lastSkenarioAInputs.harga_jual;
-                document.getElementById('volume_penjualan_skenario_b').value = lastSkenarioAInputs.volume_penjualan;
-                skenarioBContainer.classList.remove('hidden');
-                showSkenarioBButton.classList.add('hidden');
-            });
-        }
-        
-        if (formB) {
-            formB.addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                // 1. Buat FormData dari input Skenario B (Harga Jual & Volume)
-                const formBData = new FormData(formB);
-                
-                // 2. Gabungkan dengan semua input Skenario A yang disimpan
-                const combinedData = new FormData();
+        });
+    }
 
-                for (const key in lastSkenarioAInputs) {
-                    combinedData.append(key, lastSkenarioAInputs[key]);
-                }
-                
-                combinedData.append('harga_jual', formBData.get('harga_jual'));
-                combinedData.append('volume_penjualan', formBData.get('volume_penjualan'));
-                combinedData.append('_token', document.querySelector('meta[name="csrf-token"]').content);
-                
-                // 3. Panggil fungsi perhitungan Skenario B
-                calculateSkenarioB(combinedData);
-            });
-        }
+    if (dom.showSkenarioBButton) {
+        dom.showSkenarioBButton.addEventListener('click', () => {
+            document.getElementById('harga_jual_skenario_b').value = state.lastInputs.harga_jual || '';
+            document.getElementById('volume_penjualan_skenario_b').value = state.lastInputs.volume_penjualan || '';
+            dom.skenarioBContainer.classList.remove('hidden');
+            dom.showSkenarioBButton.classList.add('hidden');
+        });
+    }
 
-    } 
+    if (dom.formB) {
+        dom.formB.addEventListener('submit', (event) => {
+            event.preventDefault();
+            const formBData = new FormData(dom.formB);
+            const combined = new FormData();
+            Object.entries(state.lastInputs).forEach(([key, value]) => combined.append(key, value));
+            combined.append('harga_jual', formBData.get('harga_jual'));
+            combined.append('volume_penjualan', formBData.get('volume_penjualan'));
+            combined.append('_token', csrfToken);
+            calculateSkenarioB(combined);
+        });
+    }
 });
