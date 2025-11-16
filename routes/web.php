@@ -21,7 +21,7 @@ Route::get('/simulator', [SimulatorController::class, 'index'])->name('simulator
 Route::post('/simulator/calculate', [SimulatorController::class, 'calculate'])->name('simulator.calculate');
 
 
-// --- ROUTE YANG DILINDUNGI (MEMBUTUHKAN AUTH) ---
+// --- ROUTE YANG DILINDUNGI (MEMBUTUHKAN AUTH h) ---
 Route::middleware(['auth'])->group(function () {
     
     // Route Dashboard standar dari Breeze (Pengguna TIDAK akan diarahkan ke sini setelah login, karena RouteServiceProvider diubah)
