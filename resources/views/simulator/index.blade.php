@@ -134,6 +134,17 @@
                     <div class="text-center font-bold text-lg" id="pertumbuhan_val">10%</div>
                     <div class="error-message text-red-500 text-xs mt-1" id="error-tingkat_pertumbuhan"></div>
                 </div>
+                <div class="pt-4 border-t input-group">
+                    <label for="kenaikan_harga_jual_tahunan" class="block text-sm font-medium text-gray-700">Penyesuaian Harga Jual Tahunan (%)</label>
+                    <input type="range" name="kenaikan_harga_jual_tahunan" id="kenaikan_harga_jual_tahunan" min="0" max="30" step="0.5" value="4" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer range-lg">
+                    <div class="text-center font-bold text-lg" id="kenaikan_harga_val">4%</div>
+                    <div class="error-message text-red-500 text-xs mt-1" id="error-kenaikan_harga_jual_tahunan"></div>
+                </div>
+                <div class="flex flex-col gap-2 input-group">
+                    <label for="durasi_proyeksi_tahun" class="text-sm font-medium text-gray-700">Durasi Proyeksi (Tahun)</label>
+                    <input type="number" name="durasi_proyeksi_tahun" id="durasi_proyeksi_tahun" value="3" min="1" max="5" class="block w-full border border-gray-300 rounded-md shadow-sm p-2">
+                    <div class="error-message text-red-500 text-xs" id="error-durasi_proyeksi_tahun"></div>
+                </div>
                 <div class="flex justify-end pt-4">
                     <button type="button" data-next="2" class="step-nav-button bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">
                         Lanjut ke Langkah 2 &rarr;
@@ -159,6 +170,33 @@
                     <label for="modal_kerja" class="text-sm font-medium text-gray-700">Modal Kerja Awal (Kas) (Rp)</label>
                     <input type="number" name="modal_kerja" id="modal_kerja" value="10000000" min="0" class="block w-full border border-gray-300 rounded-md shadow-sm p-2">
                     <div class="error-message text-red-500 text-xs" id="error-modal_kerja"></div>
+                </div>
+                <div class="flex flex-col gap-2 input-group">
+                    <label for="modal_disetor_pemilik" class="text-sm font-medium text-gray-700">Modal Disetor Pemilik (Rp)</label>
+                    <input type="number" name="modal_disetor_pemilik" id="modal_disetor_pemilik" value="25000000" min="0" class="block w-full border border-gray-300 rounded-md shadow-sm p-2">
+                    <div class="error-message text-red-500 text-xs" id="error-modal_disetor_pemilik"></div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="flex flex-col gap-2 input-group">
+                        <label for="jumlah_pinjaman" class="text-sm font-medium text-gray-700">Pinjaman Bank (Rp)</label>
+                        <input type="number" name="jumlah_pinjaman" id="jumlah_pinjaman" value="20000000" min="0" class="block w-full border border-gray-300 rounded-md shadow-sm p-2">
+                        <div class="error-message text-red-500 text-xs" id="error-jumlah_pinjaman"></div>
+                    </div>
+                    <div class="flex flex-col gap-2 input-group">
+                        <label for="bunga_pinjaman_tahunan" class="text-sm font-medium text-gray-700">Bunga Pinjaman Tahunan (%)</label>
+                        <input type="number" name="bunga_pinjaman_tahunan" id="bunga_pinjaman_tahunan" value="12" min="0" max="100" step="0.1" class="block w-full border border-gray-300 rounded-md shadow-sm p-2">
+                        <div class="error-message text-red-500 text-xs" id="error-bunga_pinjaman_tahunan"></div>
+                    </div>
+                    <div class="flex flex-col gap-2 input-group">
+                        <label for="tenor_pinjaman_bulan" class="text-sm font-medium text-gray-700">Tenor Pinjaman (Bulan)</label>
+                        <input type="number" name="tenor_pinjaman_bulan" id="tenor_pinjaman_bulan" value="36" min="0" max="600" class="block w-full border border-gray-300 rounded-md shadow-sm p-2">
+                        <div class="error-message text-red-500 text-xs" id="error-tenor_pinjaman_bulan"></div>
+                    </div>
+                </div>
+                <div class="flex flex-col gap-2 input-group">
+                    <label for="masa_manfaat_aset_tahun" class="text-sm font-medium text-gray-700">Masa Manfaat Aset (Tahun)</label>
+                    <input type="number" name="masa_manfaat_aset_tahun" id="masa_manfaat_aset_tahun" value="5" min="1" max="30" step="0.5" class="block w-full border border-gray-300 rounded-md shadow-sm p-2">
+                    <div class="error-message text-red-500 text-xs" id="error-masa_manfaat_aset_tahun"></div>
                 </div>
                 <div class="flex justify-between pt-4">
                     <button type="button" data-prev="1" class="step-nav-button bg-gray-400 text-white px-4 py-2 rounded-md hover:bg-gray-500">
@@ -204,11 +242,18 @@
                 </div>
                 
                 <div class="pt-4 border-t input-group">
-                    <label for="inflasi_biaya" class="block text-sm font-medium text-gray-700">Asumsi Inflasi Biaya Tahunan (%)</label>
-                    <input type="range" name="inflasi_biaya" id="inflasi_biaya" min="0" max="20" step="0.5" value="5" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer range-lg">
-                    <div class="text-center font-bold text-lg" id="inflasi_val">5%</div>
-                    <div class="error-message text-red-500 text-xs mt-1" id="error-inflasi_biaya"></div>
+                    <label for="inflasi_cogs_tahunan" class="block text-sm font-medium text-gray-700">Inflasi COGS Tahunan (%)</label>
+                    <input type="range" name="inflasi_cogs_tahunan" id="inflasi_cogs_tahunan" min="0" max="20" step="0.5" value="5" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer range-lg">
+                    <div class="text-center font-bold text-lg" id="inflasi_cogs_val">5%</div>
+                    <div class="error-message text-red-500 text-xs mt-1" id="error-inflasi_cogs_tahunan"></div>
                 </div>
+                <div class="input-group">
+                    <label for="inflasi_biaya_tetap_tahunan" class="block text-sm font-medium text-gray-700">Inflasi Biaya Tetap Tahunan (%)</label>
+                    <input type="range" name="inflasi_biaya_tetap_tahunan" id="inflasi_biaya_tetap_tahunan" min="0" max="15" step="0.5" value="3" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer range-lg">
+                    <div class="text-center font-bold text-lg" id="inflasi_biaya_tetap_val">3%</div>
+                    <div class="error-message text-red-500 text-xs mt-1" id="error-inflasi_biaya_tetap_tahunan"></div>
+                </div>
+                <input type="hidden" name="inflasi_biaya" id="inflasi_biaya" value="5">
 
                 <div class="flex justify-between pt-4">
                     <button type="button" data-prev="2" class="step-nav-button bg-gray-400 text-white px-4 py-2 rounded-md hover:bg-gray-500">
@@ -241,20 +286,24 @@
                         <p class="text-sm text-gray-500 mb-4">Ringkasan ini membantu memastikan bahwa hasil simulasi sesuai dengan angka yang baru saja Anda masukkan.</p>
                         <ul class="space-y-4 text-sm text-gray-600">
                             <li class="bg-blue-50 rounded-lg p-4">
-                                <p class="font-semibold text-gray-800">Strategi pendapatan</p>
-                                <p>Anda menetapkan harga jual <span data-input-summary="harga_jual" class="font-semibold text-gray-900">-</span> per unit dan menargetkan volume <span data-input-summary="volume_penjualan" class="font-semibold text-gray-900">-</span> unit per bulan dengan proyeksi pertumbuhan tahunan <span data-input-summary="tingkat_pertumbuhan" class="font-semibold text-gray-900">-</span>.</p>
+                                <p class="font-semibold text-gray-800">Strategi pendapatan multi-tahun</p>
+                                <p>Anda menetapkan harga jual <span data-input-summary="harga_jual" class="font-semibold text-gray-900">-</span> per unit dan menargetkan volume <span data-input-summary="volume_penjualan" class="font-semibold text-gray-900">-</span> unit per bulan dengan pertumbuhan tahunan <span data-input-summary="tingkat_pertumbuhan" class="font-semibold text-gray-900">-</span>. Harga jual diasumsikan naik <span data-input-summary="kenaikan_harga_jual_tahunan" class="font-semibold text-gray-900">-</span> setiap tahun selama <span data-input-summary="durasi_proyeksi_tahun" class="font-semibold text-gray-900">-</span>.</p>
                             </li>
                             <li class="bg-emerald-50 rounded-lg p-4">
-                                <p class="font-semibold text-gray-800">Modal & investasi awal</p>
-                                <p>Simulasi memperhitungkan kebutuhan modal kerja sebesar <span data-input-summary="modal_kerja" class="font-semibold text-gray-900">-</span> dan belanja aset (CAPEX) sebesar <span data-input-summary="capex" class="font-semibold text-gray-900">-</span> yang Anda input.</p>
+                                <p class="font-semibold text-gray-800">Modal kerja & investasi aset</p>
+                                <p>Simulasi memperhitungkan kebutuhan modal kerja sebesar <span data-input-summary="modal_kerja" class="font-semibold text-gray-900">-</span> serta belanja aset (CAPEX) sebesar <span data-input-summary="capex" class="font-semibold text-gray-900">-</span> yang kemudian disusutkan selama <span data-input-summary="masa_manfaat_aset_tahun" class="font-semibold text-gray-900">-</span>.</p>
                             </li>
                             <li class="bg-amber-50 rounded-lg p-4">
-                                <p class="font-semibold text-gray-800">Struktur biaya</p>
-                                <p>Biaya langsung (COGS) per unit disetel ke <span data-input-summary="cogs" class="font-semibold text-gray-900">-</span> dengan biaya tetap bulanan <span data-input-summary="biaya_tetap" class="font-semibold text-gray-900">-</span>. Semua angka ini digunakan untuk menghitung margin kotor dan laba.</p>
+                                <p class="font-semibold text-gray-800">Struktur pendanaan</p>
+                                <p>Modal pribadi yang disetor mencapai <span data-input-summary="modal_disetor_pemilik" class="font-semibold text-gray-900">-</span>, sedangkan bank menyediakan pinjaman sebesar <span data-input-summary="jumlah_pinjaman" class="font-semibold text-gray-900">-</span> dengan bunga <span data-input-summary="bunga_pinjaman_tahunan" class="font-semibold text-gray-900">-</span> dan tenor <span data-input-summary="tenor_pinjaman_bulan" class="font-semibold text-gray-900">-</span>.</p>
+                            </li>
+                            <li class="bg-orange-50 rounded-lg p-4">
+                                <p class="font-semibold text-gray-800">Struktur biaya operasional</p>
+                                <p>Biaya langsung (COGS) per unit disetel ke <span data-input-summary="cogs" class="font-semibold text-gray-900">-</span> dengan biaya tetap bulanan <span data-input-summary="biaya_tetap" class="font-semibold text-gray-900">-</span>. Semua angka ini menjadi dasar margin kotor dan EBITDA.</p>
                             </li>
                             <li class="bg-indigo-50 rounded-lg p-4">
-                                <p class="font-semibold text-gray-800">Asumsi pajak dan inflasi</p>
-                                <p>Tarif pajak penghasilan yang Anda gunakan adalah <span data-input-summary="tarif_pajak" class="font-semibold text-gray-900">-</span>, sementara inflasi biaya tahunan diasumsikan sebesar <span data-input-summary="inflasi_biaya" class="font-semibold text-gray-900">-</span>.</p>
+                                <p class="font-semibold text-gray-800">Asumsi pajak & inflasi</p>
+                                <p>Tarif pajak penghasilan yang Anda gunakan adalah <span data-input-summary="tarif_pajak" class="font-semibold text-gray-900">-</span>, dengan inflasi COGS <span data-input-summary="inflasi_cogs_tahunan" class="font-semibold text-gray-900">-</span> dan inflasi biaya tetap <span data-input-summary="inflasi_biaya_tetap_tahunan" class="font-semibold text-gray-900">-</span>.</p>
                             </li>
                         </ul>
                     </div>
@@ -265,8 +314,8 @@
                             <p class="text-sm font-medium text-gray-500">Laba Bersih Proyeksi (Tahunan)</p>
                             <p id="net-profit" class="text-2xl font-bold text-green-600 mt-1">-</p>
                         </div>
-                        <div class="bg-white p-4 rounded-lg shadow-md border-l-4 border-teal-500"> 
-                            <p class="text-sm font-medium text-gray-500">Saldo Kas Akhir (Tahun 1)</p>
+                        <div class="bg-white p-4 rounded-lg shadow-md border-l-4 border-teal-500">
+                            <p class="text-sm font-medium text-gray-500">Saldo Kas Akhir (Akhir Proyeksi)</p>
                             <p id="final-cash-balance" class="text-2xl font-bold text-teal-600 mt-1">-</p>
                         </div>
                         <div class="bg-white p-4 rounded-lg shadow-md border-l-4 border-yellow-500">
@@ -284,8 +333,58 @@
                         </div>
                     </div>
 
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <div class="bg-white p-4 rounded-lg shadow-md border-l-4 border-emerald-500">
+                            <p class="text-sm font-medium text-gray-500">EBITDA Tahun Pertama</p>
+                            <p id="ebitda-year1" class="text-2xl font-bold text-emerald-600 mt-1">-</p>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg shadow-md border-l-4 border-purple-500">
+                            <p class="text-sm font-medium text-gray-500">Gross Profit Margin (Tahun 1)</p>
+                            <p id="gross-margin" class="text-2xl font-bold text-purple-600 mt-1">-</p>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg shadow-md border-l-4 border-pink-500">
+                            <p class="text-sm font-medium text-gray-500">Net Profit Margin (Tahun 1)</p>
+                            <p id="net-margin" class="text-2xl font-bold text-pink-600 mt-1">-</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                        <div class="bg-white p-4 rounded-lg shadow-md border-l-4 border-slate-500">
+                            <p class="text-sm font-medium text-gray-500">Debt-to-Equity Ratio</p>
+                            <p id="debt-to-equity" class="text-2xl font-bold text-slate-700 mt-1">-</p>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg shadow-md border-l-4 border-fuchsia-500">
+                            <p class="text-sm font-medium text-gray-500">Interest Coverage Ratio</p>
+                            <p id="interest-coverage" class="text-2xl font-bold text-fuchsia-600 mt-1">-</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-lg shadow-md border border-slate-100 mb-8">
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-4">
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-widest text-slate-500">Arus kas Tahun 1</p>
+                                <h4 class="text-lg font-semibold text-gray-900">Ringkasan Operating, Investing & Financing</h4>
+                            </div>
+                            <p class="text-sm text-gray-500">Detail bulanan menampilkan Tahun 1. Durasi proyeksi: <span id="projection-duration-label" class="font-semibold text-gray-900">-</span>.</p>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="p-4 rounded-xl bg-emerald-50 border border-emerald-100">
+                                <p class="text-xs font-semibold text-emerald-600 uppercase tracking-wide">Operasi</p>
+                                <p id="cfo-year1" class="text-2xl font-bold text-emerald-700 mt-1">-</p>
+                            </div>
+                            <div class="p-4 rounded-xl bg-blue-50 border border-blue-100">
+                                <p class="text-xs font-semibold text-blue-600 uppercase tracking-wide">Investasi</p>
+                                <p id="cfi-year1" class="text-2xl font-bold text-blue-700 mt-1">-</p>
+                            </div>
+                            <div class="p-4 rounded-xl bg-indigo-50 border border-indigo-100">
+                                <p class="text-xs font-semibold text-indigo-600 uppercase tracking-wide">Pendanaan</p>
+                                <p id="cff-year1" class="text-2xl font-bold text-indigo-700 mt-1">-</p>
+                            </div>
+                        </div>
+                    </div>
+
                     <h3 class="text-xl font-semibold mt-6 mb-3 border-b pb-1">Visualisasi Proyeksi Bulanan (1 Tahun)</h3>
-                    
+
                     <div class="bg-white p-4 rounded-lg shadow-md mt-6">
                         <canvas id="cashFlowChart"></canvas>
                     </div>
@@ -295,7 +394,32 @@
                     </div>
 
                     <div class="bg-white p-4 rounded-lg shadow-md mt-6">
+                        <canvas id="cashComponentChart"></canvas>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-lg shadow-md mt-6">
                         <canvas id="keuntunganChart"></canvas>
+                    </div>
+
+                    <h3 class="text-xl font-semibold mt-8 mb-3 border-b pb-1">Ringkasan Proyeksi Tahunan</h3>
+                    <p class="text-sm text-gray-500 mb-4">Tabel berikut menunjukkan ringkasan Pro-Forma Income Statement dan Cash Flow hingga akhir periode perencanaan.</p>
+                    <div class="overflow-x-auto bg-white rounded-lg shadow-md">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tahun</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pendapatan</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">COGS</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">EBITDA</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Laba Bersih</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CFO</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CFI</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CFF</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Saldo Kas Akhir</th>
+                                </tr>
+                            </thead>
+                            <tbody id="yearly-projection-body" class="bg-white divide-y divide-gray-200"></tbody>
+                        </table>
                     </div>
 
 
