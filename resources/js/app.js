@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
             keuntungan: null,
             cashFlow: null,
             costRevenue: null,
+            cashComponent: null,
         },
     };
 
@@ -45,7 +46,20 @@ document.addEventListener('DOMContentLoaded', () => {
         warningMessage: document.getElementById('cash-warning-message'),
         errorMessages: document.querySelectorAll('.error-message'),
         sliderGrowth: document.getElementById('tingkat_pertumbuhan'),
-        sliderInflasi: document.getElementById('inflasi_biaya'),
+        sliderPrice: document.getElementById('kenaikan_harga_jual_tahunan'),
+        sliderInflasiCogs: document.getElementById('inflasi_cogs_tahunan'),
+        sliderInflasiTetap: document.getElementById('inflasi_biaya_tetap_tahunan'),
+        legacyInflasiInput: document.getElementById('inflasi_biaya'),
+        ebitdaField: document.getElementById('ebitda-year1'),
+        grossMarginField: document.getElementById('gross-margin'),
+        netMarginField: document.getElementById('net-margin'),
+        debtToEquityField: document.getElementById('debt-to-equity'),
+        interestCoverageField: document.getElementById('interest-coverage'),
+        cfoYear1Field: document.getElementById('cfo-year1'),
+        cfiYear1Field: document.getElementById('cfi-year1'),
+        cffYear1Field: document.getElementById('cff-year1'),
+        projectionDurationLabel: document.getElementById('projection-duration-label'),
+        yearlyProjectionBody: document.getElementById('yearly-projection-body'),
         saveStatusMessage: document.getElementById('saveStatusMessage'),
     };
 
@@ -67,6 +81,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const formatRupiah = (value) => `Rp. ${numberFormatter.format(Math.round(Number(value) || 0))}`;
     const formatUnit = (value) => `${numberFormatter.format(Math.round(Number(value) || 0))} Unit`;
     const formatPercent = (value) => `${numberFormatter.format(Number(value) || 0)}%`;
+    const formatYears = (value) => `${numberFormatter.format(Number(value) || 0)} Tahun`;
+    const formatMonths = (value) => `${numberFormatter.format(Number(value) || 0)} Bulan`;
     const setSkenarioBMessage = (message = '', variant = 'info') => {
         if (!dom.skenarioBMessage) return;
         const colorClasses = ['text-emerald-600', 'text-red-600', 'text-indigo-600'];
@@ -253,6 +269,44 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
+    const drawCashComponentChart = (labels, cfoData, cfiData, cffData) => {
+        const ctx = document.getElementById('cashComponentChart')?.getContext('2d');
+        if (!ctx) return;
+        destroyChart(state.charts.cashComponent);
+        state.charts.cashComponent = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [
+                    {
+                        label: 'CFO',
+                        data: cfoData,
+                        backgroundColor: 'rgba(16, 185, 129, 0.7)',
+                    },
+                    {
+                        label: 'CFI',
+                        data: cfiData,
+                        backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                    },
+                    {
+                        label: 'CFF',
+                        data: cffData,
+                        backgroundColor: 'rgba(99, 102, 241, 0.7)',
+                    },
+                ],
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: { title: { display: true, text: 'Arus Kas (Rp)' } },
+                },
+                plugins: {
+                    title: { display: true, text: 'Komponen Arus Kas (Tahun 1)' },
+                },
+            },
+        });
+    };
+
     const updateWarningCard = (message) => {
         if (!dom.warningCard || !dom.warningMessage) return;
         dom.warningMessage.innerText = message;
@@ -280,7 +334,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const rows = [
             { label: 'Harga Jual per Unit (Rp)', key: 'harga_jual' },
             { label: 'Keuntungan Bersih Tahunan (Rp)', key: 'keuntungan_bersih_tahunan' },
-            { label: 'Saldo Kas Akhir Tahun (Rp)', key: 'saldo_kas_akhir' },
+            { label: 'Saldo Kas Akhir Proyeksi (Rp)', key: 'saldo_kas_akhir' },
         ];
 
         rows.forEach((row) => {
@@ -314,11 +368,19 @@ document.addEventListener('DOMContentLoaded', () => {
             volume_penjualan: formatUnit,
             tingkat_pertumbuhan: formatPercent,
             modal_kerja: formatRupiah,
+            modal_disetor_pemilik: formatRupiah,
             capex: formatRupiah,
             cogs: formatRupiah,
             biaya_tetap: formatRupiah,
+            jumlah_pinjaman: formatRupiah,
+            bunga_pinjaman_tahunan: formatPercent,
+            tenor_pinjaman_bulan: formatMonths,
+            masa_manfaat_aset_tahun: formatYears,
+            kenaikan_harga_jual_tahunan: formatPercent,
+            inflasi_cogs_tahunan: formatPercent,
+            inflasi_biaya_tetap_tahunan: formatPercent,
+            durasi_proyeksi_tahun: formatYears,
             tarif_pajak: formatPercent,
-            inflasi_biaya: formatPercent,
         };
 
         dom.inputSummaryFields?.forEach((field) => {
@@ -375,8 +437,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (key === 'tingkat_pertumbuhan') {
                     document.getElementById('pertumbuhan_val').innerText = `${value}%`;
                 }
-                if (key === 'inflasi_biaya') {
-                    document.getElementById('inflasi_val').innerText = `${value}%`;
+                if (key === 'kenaikan_harga_jual_tahunan') {
+                    document.getElementById('kenaikan_harga_val').innerText = `${value}%`;
+                }
+                if (key === 'inflasi_cogs_tahunan') {
+                    document.getElementById('inflasi_cogs_val').innerText = `${value}%`;
+                    if (dom.legacyInflasiInput) {
+                        dom.legacyInflasiInput.value = value;
+                    }
+                }
+                if (key === 'inflasi_biaya_tetap_tahunan') {
+                    document.getElementById('inflasi_biaya_tetap_val').innerText = `${value}%`;
+                }
+                if (key === 'inflasi_biaya' && dom.legacyInflasiInput) {
+                    dom.legacyInflasiInput.value = value;
                 }
             }
         });
@@ -453,7 +527,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const handleCalculationSuccess = (payload) => {
-        const { summary, proyeksi_bulanan: proyeksi, skenario_perbandingan: skenario } = payload;
+        const { summary, proyeksi_bulanan: proyeksi, proyeksi_tahunan: proyeksiTahunan = [], skenario_perbandingan: skenario } = payload;
 
         document.getElementById('net-profit').innerText = formatRupiah(summary.keuntungan_bersih_proyeksi);
         document.getElementById('final-cash-balance').innerText = formatRupiah(summary.saldo_kas_akhir);
@@ -463,14 +537,72 @@ document.addEventListener('DOMContentLoaded', () => {
         updateInputSummary();
         updateWarningCard(summary.cash_warning_message);
 
+        const displayPercent = (value) => (value === null || value === undefined ? '-' : `${Number(value).toFixed(2)}%`);
+        dom.ebitdaField && (dom.ebitdaField.innerText = formatRupiah(summary.ebitda_tahun_pertama));
+        dom.grossMarginField && (dom.grossMarginField.innerText = displayPercent(summary.gross_profit_margin));
+        dom.netMarginField && (dom.netMarginField.innerText = displayPercent(summary.net_profit_margin));
+        dom.debtToEquityField &&
+            (dom.debtToEquityField.innerText = summary.debt_to_equity !== null && summary.debt_to_equity !== undefined
+                ? Number(summary.debt_to_equity).toFixed(2)
+                : summary.has_debt
+                ? 'Tidak terdefinisi'
+                : 'Tidak ada utang');
+        dom.interestCoverageField &&
+            (dom.interestCoverageField.innerText = summary.interest_coverage_ratio !== null && summary.interest_coverage_ratio !== undefined
+                ? Number(summary.interest_coverage_ratio).toFixed(2)
+                : 'Bebas bunga');
+
+        if (summary.cash_flow_breakdown_year1) {
+            dom.cfoYear1Field && (dom.cfoYear1Field.innerText = formatRupiah(summary.cash_flow_breakdown_year1.operasi));
+            dom.cfiYear1Field && (dom.cfiYear1Field.innerText = formatRupiah(summary.cash_flow_breakdown_year1.investasi));
+            dom.cffYear1Field && (dom.cffYear1Field.innerText = formatRupiah(summary.cash_flow_breakdown_year1.pendanaan));
+        }
+        if (dom.projectionDurationLabel) {
+            dom.projectionDurationLabel.innerText = summary.durasi_proyeksi_tahun
+                ? formatYears(summary.durasi_proyeksi_tahun)
+                : '-';
+        }
+
         const labels = proyeksi.map((item) => item.bulan);
         drawKeuntunganChart(labels, proyeksi.map((item) => item.keuntungan_bersih));
         drawCashFlowChart(labels, proyeksi.map((item) => item.saldo_kas));
         drawCostRevenueChart(
             labels,
             proyeksi.map((item) => item.pendapatan),
-            proyeksi.map((item) => item.biaya_variabel + item.biaya_tetap + item.pajak)
+            proyeksi.map(
+                (item) =>
+                    item.biaya_variabel +
+                    item.biaya_tetap +
+                    (item.depresiasi || 0) +
+                    (item.biaya_bunga || 0) +
+                    item.pajak
+            )
         );
+        drawCashComponentChart(
+            labels,
+            proyeksi.map((item) => item.arus_kas_operasi),
+            proyeksi.map((item) => item.arus_kas_investasi),
+            proyeksi.map((item) => item.arus_kas_pendanaan)
+        );
+
+        if (dom.yearlyProjectionBody) {
+            dom.yearlyProjectionBody.innerHTML = '';
+            proyeksiTahunan.forEach((row) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="px-4 py-3 whitespace-nowrap text-sm font-semibold text-gray-900">${row.tahun}</td>
+                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">${formatRupiah(row.pendapatan)}</td>
+                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">${formatRupiah(row.cogs)}</td>
+                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">${formatRupiah(row.ebitda)}</td>
+                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">${formatRupiah(row.laba_bersih)}</td>
+                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">${formatRupiah(row.arus_kas_operasi)}</td>
+                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">${formatRupiah(row.arus_kas_investasi)}</td>
+                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">${formatRupiah(row.arus_kas_pendanaan)}</td>
+                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">${formatRupiah(row.saldo_kas_akhir)}</td>
+                `;
+                dom.yearlyProjectionBody.appendChild(tr);
+            });
+        }
 
         buildComparisonTable(skenario);
         setHidden(dom.resultsData, false);
@@ -501,7 +633,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     showStep(1);
     updateSliderPreview(dom.sliderGrowth, 'pertumbuhan_val');
-    updateSliderPreview(dom.sliderInflasi, 'inflasi_val');
+    updateSliderPreview(dom.sliderPrice, 'kenaikan_harga_val');
+    updateSliderPreview(dom.sliderInflasiCogs, 'inflasi_cogs_val');
+    updateSliderPreview(dom.sliderInflasiTetap, 'inflasi_biaya_tetap_val');
+
+    const syncLegacyInflation = () => {
+        if (dom.legacyInflasiInput && dom.sliderInflasiCogs) {
+            dom.legacyInflasiInput.value = dom.sliderInflasiCogs.value;
+        }
+    };
+    dom.sliderInflasiCogs?.addEventListener('input', syncLegacyInflation);
+    syncLegacyInflation();
 
     const calculateUrl = dom.formA.dataset.calculateUrl;
     const saveUrl = dom.saveButton?.dataset.saveUrl;
