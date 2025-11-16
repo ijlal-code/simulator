@@ -234,7 +234,31 @@
                 <p class="text-gray-500 italic" id="last-update">Tekan "JALANKAN SIMULASI" untuk melihat hasil proyeksi.</p>
 
                 <div id="results-data" class="hidden">
-                    
+
+                    <div class="bg-white border border-blue-100 rounded-xl p-5 shadow mb-8">
+                        <p class="text-xs font-semibold uppercase tracking-widest text-blue-500">Detail Input Pengguna</p>
+                        <h3 class="text-xl font-semibold text-gray-900 mt-1">Asumsi yang Anda Masukkan</h3>
+                        <p class="text-sm text-gray-500 mb-4">Ringkasan ini membantu memastikan bahwa hasil simulasi sesuai dengan angka yang baru saja Anda masukkan.</p>
+                        <ul class="space-y-4 text-sm text-gray-600">
+                            <li class="bg-blue-50 rounded-lg p-4">
+                                <p class="font-semibold text-gray-800">Strategi pendapatan</p>
+                                <p>Anda menetapkan harga jual <span data-input-summary="harga_jual" class="font-semibold text-gray-900">-</span> per unit dan menargetkan volume <span data-input-summary="volume_penjualan" class="font-semibold text-gray-900">-</span> unit per bulan dengan proyeksi pertumbuhan tahunan <span data-input-summary="tingkat_pertumbuhan" class="font-semibold text-gray-900">-</span>.</p>
+                            </li>
+                            <li class="bg-emerald-50 rounded-lg p-4">
+                                <p class="font-semibold text-gray-800">Modal & investasi awal</p>
+                                <p>Simulasi memperhitungkan kebutuhan modal kerja sebesar <span data-input-summary="modal_kerja" class="font-semibold text-gray-900">-</span> dan belanja aset (CAPEX) sebesar <span data-input-summary="capex" class="font-semibold text-gray-900">-</span> yang Anda input.</p>
+                            </li>
+                            <li class="bg-amber-50 rounded-lg p-4">
+                                <p class="font-semibold text-gray-800">Struktur biaya</p>
+                                <p>Biaya langsung (COGS) per unit disetel ke <span data-input-summary="cogs" class="font-semibold text-gray-900">-</span> dengan biaya tetap bulanan <span data-input-summary="biaya_tetap" class="font-semibold text-gray-900">-</span>. Semua angka ini digunakan untuk menghitung margin kotor dan laba.</p>
+                            </li>
+                            <li class="bg-indigo-50 rounded-lg p-4">
+                                <p class="font-semibold text-gray-800">Asumsi pajak dan inflasi</p>
+                                <p>Tarif pajak penghasilan yang Anda gunakan adalah <span data-input-summary="tarif_pajak" class="font-semibold text-gray-900">-</span>, sementara inflasi biaya tahunan diasumsikan sebesar <span data-input-summary="inflasi_biaya" class="font-semibold text-gray-900">-</span>.</p>
+                            </li>
+                        </ul>
+                    </div>
+
                     <h3 class="text-xl font-semibold mt-6 mb-3 border-b pb-1">Ringkasan Utama</h3>
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                         <div class="bg-white p-4 rounded-lg shadow-md border-l-4 border-green-500">
@@ -370,6 +394,7 @@
                     <input type="text" name="nama_skenario" id="nama_skenario" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-3 focus:border-blue-500 focus:ring focus:ring-blue-200">
                     <div class="error-message text-red-500 text-xs mt-1" id="error-nama_skenario"></div>
                 </div>
+                <p id="saveStatusMessage" class="hidden text-sm font-semibold"></p>
                 <div class="flex flex-col gap-3">
                     <button type="button" id="cancelSaveCard" class="w-full px-4 py-2 rounded-md border border-gray-300 text-gray-600 hover:bg-gray-50">Batal</button>
                     <button type="submit" class="w-full px-4 py-2 rounded-md bg-blue-600 text-white font-semibold hover:bg-blue-700">Simpan Skenario</button>

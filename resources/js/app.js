@@ -29,6 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
         saveCardDismissArea: document.querySelector('[data-save-card-dismiss]'),
         namaSkenarioInput: document.getElementById('nama_skenario'),
         saveSummaryFields: document.querySelectorAll('[data-save-summary]'),
+        inputSummaryFields: document.querySelectorAll('[data-input-summary]'),
         savedScenariosDropdown: document.getElementById('savedScenariosDropdown'),
         executeLoadButton: document.getElementById('executeLoadButton'),
         closeLoadModal: document.getElementById('closeLoadModal'),
@@ -45,6 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
         errorMessages: document.querySelectorAll('.error-message'),
         sliderGrowth: document.getElementById('tingkat_pertumbuhan'),
         sliderInflasi: document.getElementById('inflasi_biaya'),
+        saveStatusMessage: document.getElementById('saveStatusMessage'),
     };
 
     if (!dom.formA) {
@@ -64,6 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     const formatRupiah = (value) => `Rp. ${numberFormatter.format(Math.round(Number(value) || 0))}`;
     const formatUnit = (value) => `${numberFormatter.format(Math.round(Number(value) || 0))} Unit`;
+    const formatPercent = (value) => `${numberFormatter.format(Number(value) || 0)}%`;
     const setSkenarioBMessage = (message = '', variant = 'info') => {
         if (!dom.skenarioBMessage) return;
         const colorClasses = ['text-emerald-600', 'text-red-600', 'text-indigo-600'];
@@ -305,18 +308,62 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
+    const updateInputSummary = () => {
+        const formatterMap = {
+            harga_jual: formatRupiah,
+            volume_penjualan: formatUnit,
+            tingkat_pertumbuhan: formatPercent,
+            modal_kerja: formatRupiah,
+            capex: formatRupiah,
+            cogs: formatRupiah,
+            biaya_tetap: formatRupiah,
+            tarif_pajak: formatPercent,
+            inflasi_biaya: formatPercent,
+        };
+
+        dom.inputSummaryFields?.forEach((field) => {
+            const key = field.dataset.inputSummary;
+            const rawValue = state.lastInputs[key];
+            const formatter = formatterMap[key] || ((val) => numberFormatter.format(Number(val) || 0));
+            field.innerText = rawValue !== undefined && rawValue !== '' ? formatter(rawValue) : '-';
+        });
+    };
+
+    const setSaveStatusMessage = (message = '', variant = 'info') => {
+        if (!dom.saveStatusMessage) return;
+        const colorMap = {
+            success: 'text-emerald-600',
+            error: 'text-red-600',
+            info: 'text-blue-600',
+        };
+
+        dom.saveStatusMessage.classList.remove('text-emerald-600', 'text-red-600', 'text-blue-600');
+
+        if (!message) {
+            dom.saveStatusMessage.classList.add('hidden');
+            dom.saveStatusMessage.innerText = '';
+            return;
+        }
+
+        dom.saveStatusMessage.classList.remove('hidden');
+        dom.saveStatusMessage.classList.add(colorMap[variant] || colorMap.info);
+        dom.saveStatusMessage.innerText = message;
+    };
+
     const openSaveCard = () => {
         if (!state.hasLatestResult) {
             alert('Jalankan simulasi terlebih dahulu sebelum menyimpan skenario.');
             return;
         }
         updateSaveSummary();
+        setSaveStatusMessage('');
         setHidden(dom.saveCard, false);
         dom.namaSkenarioInput?.focus();
     };
 
     const closeSaveCard = () => {
         dom.saveForm?.reset();
+        setSaveStatusMessage('');
         setHidden(dom.saveCard, true);
     };
 
@@ -413,6 +460,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('bep').innerText = formatUnit(summary.titik_impas_unit);
         document.getElementById('payback-period').innerText = summary.waktu_balik_modal;
         document.getElementById('last-update').innerHTML = `<strong>Diperbarui pada ${summary.diperbarui_pada}</strong>`;
+        updateInputSummary();
         updateWarningCard(summary.cash_warning_message);
 
         const labels = proyeksi.map((item) => item.bulan);
@@ -569,8 +617,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 })
                 .then((data) => {
                     if (data.status === 'success') {
-                        alert(data.message);
-                        closeSaveCard();
+                        setSaveStatusMessage(data.message, 'success');
                         state.hasLatestResult = false;
                         disableElement(dom.saveButton, true);
                     }
@@ -579,8 +626,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.error('Error Save:', error);
                     if (error.errors) {
                         displayValidationErrors(error.errors);
+                        setSaveStatusMessage('Validasi gagal. Periksa kembali nama skenario Anda.', 'error');
                     } else {
-                        alert('Gagal menyimpan skenario.');
+                        setSaveStatusMessage('Gagal menyimpan skenario. Silakan coba lagi.', 'error');
                     }
                 });
         });
