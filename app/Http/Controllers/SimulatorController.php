@@ -106,6 +106,7 @@ class SimulatorController extends Controller
         $totalKeuntunganAfterTax = 0;
         $saldoKas = $modalKerja;
         $loanOutstanding = $jumlahPinjaman;
+        $sukuBungaBulanan = $bungaPinjamanTahunan / 12;
         $monthlyAnnuityPayment = 0;
         if ($tenorPinjamanBulan > 0 && $jumlahPinjaman > 0) {
             $monthlyAnnuityPayment = $sukuBungaBulanan > 0
@@ -116,7 +117,6 @@ class SimulatorController extends Controller
         $inflasiHargaBulanan = $kenaikanHargaTahunan / 12;
         $inflasiCogsBulanan = $inflasiCogs / 12;
         $inflasiBiayaTetapBulanan = $inflasiBiayaTetap / 12;
-        $sukuBungaBulanan = $bungaPinjamanTahunan / 12;
         $bulanKasNegatifPertama = null;
         $kasNegatifMessage = "Arus kas tetap sehat sepanjang periode proyeksi.";
         $paybackMonth = null;
