@@ -12,11 +12,15 @@ class Simulation extends Model
     protected $table = 'simulations'; 
 
     protected $fillable = [
-        'nama_skenario', 
+        'nama_skenario',
         'user_id', // PENTING: Untuk relasi kepemilikan
-        'harga_jual', 
-        'volume_penjualan', 
-        'capex', 
+        'harga_jual',
+        'volume_penjualan',
+        'anggaran_marketing',
+        'biaya_per_lead',
+        'tingkat_konversi',
+        'kapasitas_bulanan',
+        'capex',
         'modal_kerja',
         'modal_disetor_pemilik',
         'jumlah_pinjaman',
@@ -25,6 +29,8 @@ class Simulation extends Model
         'masa_manfaat_aset_tahun',
         'cogs',
         'biaya_tetap',
+        'jumlah_karyawan',
+        'gaji_per_karyawan',
         'tingkat_pertumbuhan',
         'kenaikan_harga_jual_tahunan',
         'inflasi_cogs_tahunan',
@@ -32,11 +38,18 @@ class Simulation extends Model
         'durasi_proyeksi_tahun',
         'tarif_pajak',
         'inflasi_biaya',
+        'hari_piutang',
+        'hari_utang_usaha',
+        'seasonality_factors',
     ];
 
     protected $casts = [
         'harga_jual' => 'integer',
         'volume_penjualan' => 'integer',
+        'anggaran_marketing' => 'integer',
+        'biaya_per_lead' => 'integer',
+        'tingkat_konversi' => 'float',
+        'kapasitas_bulanan' => 'integer',
         'capex' => 'integer',
         'modal_kerja' => 'integer',
         'modal_disetor_pemilik' => 'integer',
@@ -46,6 +59,8 @@ class Simulation extends Model
         'masa_manfaat_aset_tahun' => 'float',
         'cogs' => 'integer',
         'biaya_tetap' => 'integer',
+        'jumlah_karyawan' => 'integer',
+        'gaji_per_karyawan' => 'integer',
         'tingkat_pertumbuhan' => 'float',
         'kenaikan_harga_jual_tahunan' => 'float',
         'inflasi_cogs_tahunan' => 'float',
@@ -53,6 +68,9 @@ class Simulation extends Model
         'durasi_proyeksi_tahun' => 'integer',
         'tarif_pajak' => 'float',
         'inflasi_biaya' => 'float',
+        'hari_piutang' => 'integer',
+        'hari_utang_usaha' => 'integer',
+        'seasonality_factors' => 'array',
     ];
 
     /**

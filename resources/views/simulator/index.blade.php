@@ -40,25 +40,27 @@
 <body class="bg-slate-50 min-h-screen">
 
     <header class="bg-white shadow-md border-b border-slate-100">
-        <div class="w-full px-4 sm:px-6 lg:px-12 py-5 flex flex-col gap-4 text-center lg:text-left">
-            <div>
-                <p class="text-xs font-semibold uppercase tracking-widest text-blue-500">{{ $appTitle }}</p>
-                <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">Dashboard Simulasi &amp; Proyeksi</h1>
-                <p class="text-sm text-gray-500">Susun asumsi bisnis Anda dan dapatkan ringkasan instan.</p>
-            </div>
-            <div class="flex flex-wrap items-center justify-center lg:justify-end gap-3 text-sm text-gray-700">
-                @auth
-                <a href="{{ route('profile.edit') }}" class="font-medium text-blue-600 hover:underline">
-                    Halo, {{ Auth::user()->name }}!
-                </a>
-                <form method="POST" action="{{ route('logout') }}" class="inline-flex">
-                    @csrf
-                    <button type="submit" class="px-4 py-2 rounded-full border border-red-200 text-red-600 hover:bg-red-50 transition">Logout</button>
-                </form>
-                @else
-                <a href="{{ route('login') }}" class="px-4 py-2 rounded-full border border-blue-200 text-blue-600 hover:bg-blue-50 transition">Login</a>
-                <a href="{{ route('register') }}" class="px-4 py-2 rounded-full border border-emerald-200 text-emerald-600 hover:bg-emerald-50 transition">Register</a>
-                @endauth
+        <div class="w-full px-4 sm:px-6 lg:px-12 py-5 flex flex-col gap-4">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <div class="text-center lg:text-left">
+                    <p class="text-xs font-semibold uppercase tracking-widest text-blue-500">{{ $appTitle }}</p>
+                    <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">Dashboard Simulasi &amp; Proyeksi</h1>
+                    <p class="text-sm text-gray-500">Susun asumsi bisnis Anda dan dapatkan ringkasan instan.</p>
+                </div>
+                <nav class="flex flex-wrap items-center justify-center lg:justify-end gap-3 text-sm text-gray-700">
+                    @auth
+                    <a href="{{ route('profile.edit') }}" class="font-medium text-blue-600 hover:underline">
+                        Halo, {{ Auth::user()->name }}!
+                    </a>
+                    <form method="POST" action="{{ route('logout') }}" class="inline-flex">
+                        @csrf
+                        <button type="submit" class="px-4 py-2 rounded-full border border-red-200 text-red-600 hover:bg-red-50 transition">Logout</button>
+                    </form>
+                    @else
+                    <a href="{{ route('login') }}" class="px-4 py-2 rounded-full border border-blue-200 text-blue-600 hover:bg-blue-50 transition">Login</a>
+                    <a href="{{ route('register') }}" class="px-4 py-2 rounded-full border border-emerald-200 text-emerald-600 hover:bg-emerald-50 transition">Register</a>
+                    @endauth
+                </nav>
             </div>
         </div>
     </header>
@@ -104,41 +106,87 @@
             
             <div id="step-1" class="tab-content active space-y-4">
                 <h2 class="text-2xl font-semibold mb-4 text-blue-600">Langkah 1: Profil Usaha & Pendapatan</h2>
-                <div class="flex flex-col gap-2 input-group">
-                    <div class="flex items-center justify-between gap-2">
-                        <label for="harga_jual" class="text-sm font-medium text-gray-700">Harga Jual per Unit (Rp)</label>
-                        <span class="text-xs text-gray-500">
-                            <abbr title="Harga produk atau jasa Anda per unit.">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                            </abbr>
-                        </span>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="flex flex-col gap-2 input-group">
+                        <div class="flex items-center justify-between gap-2">
+                            <label for="harga_jual" class="text-sm font-medium text-gray-700">Harga Jual per Unit (Rp)</label>
+                            <span class="text-xs text-gray-500">
+                                <abbr title="Harga produk atau jasa Anda per unit.">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                </abbr>
+                            </span>
+                        </div>
+                        <input type="number" name="harga_jual" id="harga_jual" value="100000" min="0" class="block w-full border border-gray-300 rounded-md shadow-sm p-2">
+                        <div class="error-message text-red-500 text-xs" id="error-harga_jual"></div>
                     </div>
-                    <input type="number" name="harga_jual" id="harga_jual" value="100000" min="0" class="block w-full border border-gray-300 rounded-md shadow-sm p-2">
-                    <div class="error-message text-red-500 text-xs" id="error-harga_jual"></div>
-                </div>
-                <div class="flex flex-col gap-2 input-group">
-                    <div class="flex items-center justify-between gap-2">
-                        <label for="volume_penjualan" class="text-sm font-medium text-gray-700">Target Volume Penjualan (Unit/Bulan)</label>
-                        <span class="text-xs text-gray-500">
-                            <abbr title="Jumlah unit produk yang diharapkan terjual setiap bulan.">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                            </abbr>
-                        </span>
+                    <div class="flex flex-col gap-2 input-group">
+                        <div class="flex items-center justify-between gap-2">
+                            <label for="anggaran_marketing" class="text-sm font-medium text-gray-700">Anggaran Marketing Bulanan (Rp)</label>
+                            <span class="text-xs text-gray-500">
+                                <abbr title="Total budget akuisisi pelanggan per bulan.">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                </abbr>
+                            </span>
+                        </div>
+                        <input type="number" name="anggaran_marketing" id="anggaran_marketing" value="20000000" min="0" class="block w-full border border-gray-300 rounded-md shadow-sm p-2">
+                        <div class="error-message text-red-500 text-xs" id="error-anggaran_marketing"></div>
                     </div>
-                    <input type="number" name="volume_penjualan" id="volume_penjualan" value="1000" min="0" class="block w-full border border-gray-300 rounded-md shadow-sm p-2">
-                    <div class="error-message text-red-500 text-xs" id="error-volume_penjualan"></div>
                 </div>
-                <div class="pt-4 border-t input-group">
-                    <label for="tingkat_pertumbuhan" class="block text-sm font-medium text-gray-700">Tingkat Pertumbuhan Tahunan (%)</label>
-                    <input type="range" name="tingkat_pertumbuhan" id="tingkat_pertumbuhan" min="0" max="50" step="1" value="10" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer range-lg">
-                    <div class="text-center font-bold text-lg" id="pertumbuhan_val">10%</div>
-                    <div class="error-message text-red-500 text-xs mt-1" id="error-tingkat_pertumbuhan"></div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="flex flex-col gap-2 input-group">
+                        <div class="flex items-center justify-between gap-2">
+                            <label for="biaya_per_lead" class="text-sm font-medium text-gray-700">Biaya per Prospek (CPL)</label>
+                            <span class="text-xs text-gray-500">
+                                <abbr title="Biaya rata-rata untuk mendapatkan satu prospek.">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                </abbr>
+                            </span>
+                        </div>
+                        <input type="number" name="biaya_per_lead" id="biaya_per_lead" value="20000" min="1" class="block w-full border border-gray-300 rounded-md shadow-sm p-2">
+                        <div class="error-message text-red-500 text-xs" id="error-biaya_per_lead"></div>
+                    </div>
+                    <div class="flex flex-col gap-2 input-group">
+                        <div class="flex items-center justify-between gap-2">
+                            <label for="tingkat_konversi" class="text-sm font-medium text-gray-700">Tingkat Konversi Penjualan (%)</label>
+                            <span class="text-xs text-gray-500">
+                                <abbr title="Persentase prospek yang berhasil menjadi pelanggan.">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                </abbr>
+                            </span>
+                        </div>
+                        <input type="number" name="tingkat_konversi" id="tingkat_konversi" value="3" min="0" max="100" step="0.1" class="block w-full border border-gray-300 rounded-md shadow-sm p-2">
+                        <div class="error-message text-red-500 text-xs" id="error-tingkat_konversi"></div>
+                    </div>
+                    <div class="flex flex-col gap-2 input-group">
+                        <div class="flex items-center justify-between gap-2">
+                            <label for="kapasitas_bulanan" class="text-sm font-medium text-gray-700">Kapasitas Penjualan/Bulan (Unit)</label>
+                            <span class="text-xs text-gray-500">
+                                <abbr title="Jumlah maksimum unit yang bisa diproduksi atau dilayani per bulan.">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                </abbr>
+                            </span>
+                        </div>
+                        <input type="number" name="kapasitas_bulanan" id="kapasitas_bulanan" value="1200" min="0" class="block w-full border border-gray-300 rounded-md shadow-sm p-2">
+                        <div class="error-message text-red-500 text-xs" id="error-kapasitas_bulanan"></div>
+                    </div>
                 </div>
                 <div class="pt-4 border-t input-group">
                     <label for="kenaikan_harga_jual_tahunan" class="block text-sm font-medium text-gray-700">Penyesuaian Harga Jual Tahunan (%)</label>
                     <input type="range" name="kenaikan_harga_jual_tahunan" id="kenaikan_harga_jual_tahunan" min="0" max="30" step="0.5" value="4" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer range-lg">
                     <div class="text-center font-bold text-lg" id="kenaikan_harga_val">4%</div>
                     <div class="error-message text-red-500 text-xs mt-1" id="error-kenaikan_harga_jual_tahunan"></div>
+                </div>
+                <div class="pt-4 border-t input-group">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Faktor Musiman per Bulan (%)</label>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                        @foreach (['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'] as $index => $label)
+                        <div class="flex flex-col gap-1">
+                            <label for="faktor_musim_{{ $index + 1 }}" class="text-xs font-semibold text-gray-600">{{ $label }}</label>
+                            <input type="number" name="faktor_musim_{{ $index + 1 }}" id="faktor_musim_{{ $index + 1 }}" value="100" min="0" max="300" step="1" class="block w-full border border-gray-300 rounded-md shadow-sm p-2">
+                            <div class="error-message text-red-500 text-xs" id="error-faktor_musim_{{ $index + 1 }}"></div>
+                        </div>
+                        @endforeach
+                    </div>
                 </div>
                 <div class="flex flex-col gap-2 input-group">
                     <label for="durasi_proyeksi_tahun" class="text-sm font-medium text-gray-700">Durasi Proyeksi (Tahun)</label>
@@ -175,6 +223,18 @@
                     <label for="modal_disetor_pemilik" class="text-sm font-medium text-gray-700">Modal Disetor Pemilik (Rp)</label>
                     <input type="number" name="modal_disetor_pemilik" id="modal_disetor_pemilik" value="25000000" min="0" class="block w-full border border-gray-300 rounded-md shadow-sm p-2">
                     <div class="error-message text-red-500 text-xs" id="error-modal_disetor_pemilik"></div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="flex flex-col gap-2 input-group">
+                        <label for="hari_piutang" class="text-sm font-medium text-gray-700">Hari Piutang (DSO)</label>
+                        <input type="number" name="hari_piutang" id="hari_piutang" value="30" min="0" max="180" class="block w-full border border-gray-300 rounded-md shadow-sm p-2">
+                        <div class="error-message text-red-500 text-xs" id="error-hari_piutang"></div>
+                    </div>
+                    <div class="flex flex-col gap-2 input-group">
+                        <label for="hari_utang_usaha" class="text-sm font-medium text-gray-700">Hari Utang Usaha (DPO)</label>
+                        <input type="number" name="hari_utang_usaha" id="hari_utang_usaha" value="45" min="0" max="180" class="block w-full border border-gray-300 rounded-md shadow-sm p-2">
+                        <div class="error-message text-red-500 text-xs" id="error-hari_utang_usaha"></div>
+                    </div>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div class="flex flex-col gap-2 input-group">
@@ -222,12 +282,19 @@
                     <input type="number" name="cogs" id="cogs" value="30000" min="0" class="block w-full border border-gray-300 rounded-md shadow-sm p-2">
                     <div class="error-message text-red-500 text-xs" id="error-cogs"></div>
                 </div>
-                <div class="flex flex-col gap-2 input-group">
-                    <label for="biaya_tetap" class="text-sm font-medium text-gray-700">Biaya Tetap (Sewa, Gaji, dll.) (Rp/Bulan)</label>
-                    <input type="number" name="biaya_tetap" id="biaya_tetap" value="5000000" min="0" class="block w-full border border-gray-300 rounded-md shadow-sm p-2">
-                    <div class="error-message text-red-500 text-xs" id="error-biaya_tetap"></div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="flex flex-col gap-2 input-group">
+                        <label for="jumlah_karyawan" class="text-sm font-medium text-gray-700">Jumlah Karyawan</label>
+                        <input type="number" name="jumlah_karyawan" id="jumlah_karyawan" value="8" min="0" class="block w-full border border-gray-300 rounded-md shadow-sm p-2">
+                        <div class="error-message text-red-500 text-xs" id="error-jumlah_karyawan"></div>
+                    </div>
+                    <div class="flex flex-col gap-2 input-group">
+                        <label for="gaji_per_karyawan" class="text-sm font-medium text-gray-700">Rata-rata Gaji per Karyawan (Rp/Bulan)</label>
+                        <input type="number" name="gaji_per_karyawan" id="gaji_per_karyawan" value="3500000" min="0" class="block w-full border border-gray-300 rounded-md shadow-sm p-2">
+                        <div class="error-message text-red-500 text-xs" id="error-gaji_per_karyawan"></div>
+                    </div>
                 </div>
-                
+
                 <div class="flex flex-col gap-2 pt-4 border-t input-group">
                     <div class="flex items-center justify-between gap-2">
                         <label for="tarif_pajak" class="text-sm font-medium text-gray-700">Tarif Pajak Penghasilan (%)</label>
@@ -253,7 +320,6 @@
                     <div class="text-center font-bold text-lg" id="inflasi_biaya_tetap_val">3%</div>
                     <div class="error-message text-red-500 text-xs mt-1" id="error-inflasi_biaya_tetap_tahunan"></div>
                 </div>
-                <input type="hidden" name="inflasi_biaya" id="inflasi_biaya" value="5">
 
                 <div class="flex justify-between pt-4">
                     <button type="button" data-prev="2" class="step-nav-button bg-gray-400 text-white px-4 py-2 rounded-md hover:bg-gray-500">
@@ -280,30 +346,30 @@
 
                 <div id="results-data" class="hidden">
 
-                    <div class="bg-white border border-blue-100 rounded-xl p-5 shadow mb-8">
+                    <div class="bg-gradient-to-br from-slate-50 via-white to-blue-50 border border-blue-100 rounded-xl p-5 shadow mb-8">
                         <p class="text-xs font-semibold uppercase tracking-widest text-blue-500">Detail Input Pengguna</p>
                         <h3 class="text-xl font-semibold text-gray-900 mt-1">Asumsi yang Anda Masukkan</h3>
-                        <p class="text-sm text-gray-500 mb-4">Ringkasan ini membantu memastikan bahwa hasil simulasi sesuai dengan angka yang baru saja Anda masukkan.</p>
-                        <ul class="space-y-4 text-sm text-gray-600">
-                            <li class="bg-blue-50 rounded-lg p-4">
-                                <p class="font-semibold text-gray-800">Strategi pendapatan multi-tahun</p>
-                                <p>Anda menetapkan harga jual <span data-input-summary="harga_jual" class="font-semibold text-gray-900">-</span> per unit dan menargetkan volume <span data-input-summary="volume_penjualan" class="font-semibold text-gray-900">-</span> unit per bulan dengan pertumbuhan tahunan <span data-input-summary="tingkat_pertumbuhan" class="font-semibold text-gray-900">-</span>. Harga jual diasumsikan naik <span data-input-summary="kenaikan_harga_jual_tahunan" class="font-semibold text-gray-900">-</span> setiap tahun selama <span data-input-summary="durasi_proyeksi_tahun" class="font-semibold text-gray-900">-</span>.</p>
+                        <p class="text-sm text-gray-600 mb-4">Ringkasan ini membantu memastikan bahwa hasil simulasi sesuai dengan angka yang baru saja Anda masukkan.</p>
+                        <ul class="space-y-4 text-sm text-gray-700">
+                            <li class="bg-white border border-blue-100 rounded-lg p-4 shadow-sm">
+                                <p class="font-semibold text-gray-900">Mesin pendapatan & permintaan</p>
+                                <p>Harga jual <span data-input-summary="harga_jual" class="font-semibold text-gray-900">-</span> per unit didukung anggaran marketing <span data-input-summary="anggaran_marketing" class="font-semibold text-gray-900">-</span> dengan CPL <span data-input-summary="biaya_per_lead" class="font-semibold text-gray-900">-</span> dan konversi <span data-input-summary="tingkat_konversi" class="font-semibold text-gray-900">-</span>. Musiman 12 bulan dan kapasitas <span data-input-summary="kapasitas_bulanan" class="font-semibold text-gray-900">-</span> unit mengendalikan volume aktual.</p>
                             </li>
-                            <li class="bg-emerald-50 rounded-lg p-4">
-                                <p class="font-semibold text-gray-800">Modal kerja & investasi aset</p>
-                                <p>Simulasi memperhitungkan kebutuhan modal kerja sebesar <span data-input-summary="modal_kerja" class="font-semibold text-gray-900">-</span> serta belanja aset (CAPEX) sebesar <span data-input-summary="capex" class="font-semibold text-gray-900">-</span> yang kemudian disusutkan selama <span data-input-summary="masa_manfaat_aset_tahun" class="font-semibold text-gray-900">-</span>.</p>
+                            <li class="bg-white border border-emerald-100 rounded-lg p-4 shadow-sm">
+                                <p class="font-semibold text-gray-900">Modal kerja & investasi aset</p>
+                                <p>Modal kerja awal <span data-input-summary="modal_kerja" class="font-semibold text-gray-900">-</span>, belanja aset <span data-input-summary="capex" class="font-semibold text-gray-900">-</span> disusutkan selama <span data-input-summary="masa_manfaat_aset_tahun" class="font-semibold text-gray-900">-</span>. Siklus kas dikendalikan oleh hari piutang <span data-input-summary="hari_piutang" class="font-semibold text-gray-900">-</span> dan hari utang usaha <span data-input-summary="hari_utang_usaha" class="font-semibold text-gray-900">-</span>.</p>
                             </li>
-                            <li class="bg-amber-50 rounded-lg p-4">
-                                <p class="font-semibold text-gray-800">Struktur pendanaan</p>
-                                <p>Modal pribadi yang disetor mencapai <span data-input-summary="modal_disetor_pemilik" class="font-semibold text-gray-900">-</span>, sedangkan bank menyediakan pinjaman sebesar <span data-input-summary="jumlah_pinjaman" class="font-semibold text-gray-900">-</span> dengan bunga <span data-input-summary="bunga_pinjaman_tahunan" class="font-semibold text-gray-900">-</span> dan tenor <span data-input-summary="tenor_pinjaman_bulan" class="font-semibold text-gray-900">-</span>.</p>
+                            <li class="bg-white border border-amber-100 rounded-lg p-4 shadow-sm">
+                                <p class="font-semibold text-gray-900">Struktur pendanaan</p>
+                                <p>Modal pribadi sebesar <span data-input-summary="modal_disetor_pemilik" class="font-semibold text-gray-900">-</span> berpadu dengan pinjaman bank <span data-input-summary="jumlah_pinjaman" class="font-semibold text-gray-900">-</span> berbunga <span data-input-summary="bunga_pinjaman_tahunan" class="font-semibold text-gray-900">-</span> dan tenor <span data-input-summary="tenor_pinjaman_bulan" class="font-semibold text-gray-900">-</span>.</p>
                             </li>
-                            <li class="bg-orange-50 rounded-lg p-4">
-                                <p class="font-semibold text-gray-800">Struktur biaya operasional</p>
-                                <p>Biaya langsung (COGS) per unit disetel ke <span data-input-summary="cogs" class="font-semibold text-gray-900">-</span> dengan biaya tetap bulanan <span data-input-summary="biaya_tetap" class="font-semibold text-gray-900">-</span>. Semua angka ini menjadi dasar margin kotor dan EBITDA.</p>
+                            <li class="bg-white border border-orange-100 rounded-lg p-4 shadow-sm">
+                                <p class="font-semibold text-gray-900">Struktur biaya operasional</p>
+                                <p>COGS per unit <span data-input-summary="cogs" class="font-semibold text-gray-900">-</span> dikombinasikan dengan <span data-input-summary="jumlah_karyawan" class="font-semibold text-gray-900">-</span> karyawan bergaji rata-rata <span data-input-summary="gaji_per_karyawan" class="font-semibold text-gray-900">-</span> per bulan.</p>
                             </li>
-                            <li class="bg-indigo-50 rounded-lg p-4">
-                                <p class="font-semibold text-gray-800">Asumsi pajak & inflasi</p>
-                                <p>Tarif pajak penghasilan yang Anda gunakan adalah <span data-input-summary="tarif_pajak" class="font-semibold text-gray-900">-</span>, dengan inflasi COGS <span data-input-summary="inflasi_cogs_tahunan" class="font-semibold text-gray-900">-</span> dan inflasi biaya tetap <span data-input-summary="inflasi_biaya_tetap_tahunan" class="font-semibold text-gray-900">-</span>.</p>
+                            <li class="bg-white border border-indigo-100 rounded-lg p-4 shadow-sm">
+                                <p class="font-semibold text-gray-900">Asumsi pajak & inflasi</p>
+                                <p>Tarif pajak <span data-input-summary="tarif_pajak" class="font-semibold text-gray-900">-</span>, inflasi COGS <span data-input-summary="inflasi_cogs_tahunan" class="font-semibold text-gray-900">-</span>, inflasi gaji & biaya tetap <span data-input-summary="inflasi_biaya_tetap_tahunan" class="font-semibold text-gray-900">-</span>. Harga jual disesuaikan <span data-input-summary="kenaikan_harga_jual_tahunan" class="font-semibold text-gray-900">-</span> per tahun selama <span data-input-summary="durasi_proyeksi_tahun" class="font-semibold text-gray-900">-</span>.</p>
                             </li>
                         </ul>
                     </div>
@@ -432,7 +498,7 @@
                     </div>
                     
                     <div id="skenarioBInputsContainer" class="bg-gray-100 p-4 rounded-lg shadow-inner mb-6 hidden">
-                        <h4 class="text-lg font-semibold mb-3 text-indigo-600">Input Skenario B (Hanya ubah Harga Jual & Volume):</h4>
+                        <h4 class="text-lg font-semibold mb-3 text-indigo-600">Input Skenario B (Atur Harga & Anggaran):</h4>
                         <p id="skenario-b-message" class="hidden text-sm font-semibold mb-3" aria-live="polite"></p>
 
                         <form id="skenarioBForm" class="space-y-4">
@@ -443,9 +509,9 @@
                                 <div class="error-message text-red-500 text-xs" id="error-harga_jual_skenario_b"></div>
                             </div>
                             <div class="flex flex-col gap-2 input-group">
-                                <label for="volume_penjualan_skenario_b" class="text-sm font-medium text-gray-700">Volume Penjualan Skenario B (Unit/Bulan)</label>
-                                <input type="number" name="volume_penjualan" id="volume_penjualan_skenario_b" min="0" required class="block w-full border border-gray-300 rounded-md shadow-sm p-2">
-                                <div class="error-message text-red-500 text-xs" id="error-volume_penjualan_skenario_b"></div>
+                                <label for="anggaran_marketing_skenario_b" class="text-sm font-medium text-gray-700">Anggaran Marketing Skenario B (Rp/Bulan)</label>
+                                <input type="number" name="anggaran_marketing" id="anggaran_marketing_skenario_b" min="0" required class="block w-full border border-gray-300 rounded-md shadow-sm p-2">
+                                <div class="error-message text-red-500 text-xs" id="error-anggaran_marketing_skenario_b"></div>
                             </div>
 
                             <div class="flex flex-col gap-3 pt-2">
@@ -498,16 +564,16 @@
                     <dd class="text-lg font-bold text-blue-900" data-save-summary="harga_jual">-</dd>
                 </div>
                 <div class="p-4 rounded-lg bg-indigo-50">
-                    <dt class="text-xs font-semibold text-indigo-700 tracking-wide">Volume Penjualan</dt>
-                    <dd class="text-lg font-bold text-indigo-900" data-save-summary="volume_penjualan">-</dd>
+                    <dt class="text-xs font-semibold text-indigo-700 tracking-wide">Anggaran Marketing</dt>
+                    <dd class="text-lg font-bold text-indigo-900" data-save-summary="anggaran_marketing">-</dd>
                 </div>
                 <div class="p-4 rounded-lg bg-emerald-50">
                     <dt class="text-xs font-semibold text-emerald-700 tracking-wide">Modal Kerja</dt>
                     <dd class="text-lg font-bold text-emerald-900" data-save-summary="modal_kerja">-</dd>
                 </div>
                 <div class="p-4 rounded-lg bg-amber-50">
-                    <dt class="text-xs font-semibold text-amber-700 tracking-wide">CAPEX</dt>
-                    <dd class="text-lg font-bold text-amber-900" data-save-summary="capex">-</dd>
+                    <dt class="text-xs font-semibold text-amber-700 tracking-wide">Kapasitas Bulanan</dt>
+                    <dd class="text-lg font-bold text-amber-900" data-save-summary="kapasitas_bulanan">-</dd>
                 </div>
             </dl>
 
