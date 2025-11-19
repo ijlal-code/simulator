@@ -31,7 +31,10 @@ class SimulatorController extends Controller
         // --- 1. VALIDASI INPUT ---
         $request->validate([
             'harga_jual' => 'required|numeric|min:1',
-            'volume_penjualan' => 'required|numeric|min:1',
+            'anggaran_marketing' => 'required|numeric|min:0',
+            'biaya_per_lead' => 'required|numeric|min:0.01',
+            'tingkat_konversi' => 'required|numeric|min:0|max:100',
+            'kapasitas_bulanan' => 'required|numeric|min:0',
             'capex' => 'required|numeric|min:0',
             'modal_kerja' => 'required|numeric|min:0',
             'modal_disetor_pemilik' => 'required|numeric|min:0',
@@ -40,19 +43,35 @@ class SimulatorController extends Controller
             'tenor_pinjaman_bulan' => 'required|integer|min:0|max:600',
             'masa_manfaat_aset_tahun' => 'required|numeric|min:1|max:30',
             'cogs' => 'required|numeric|min:0',
-            'biaya_tetap' => 'required|numeric|min:0',
-            'tingkat_pertumbuhan' => 'required|numeric|min:0|max:50',
+            'jumlah_karyawan' => 'required|integer|min:0',
+            'gaji_per_karyawan' => 'required|numeric|min:0',
             'kenaikan_harga_jual_tahunan' => 'required|numeric|min:0|max:50',
             'tarif_pajak' => 'required|numeric|min:0|max:100',
             'inflasi_cogs_tahunan' => 'required|numeric|min:0|max:50',
             'inflasi_biaya_tetap_tahunan' => 'required|numeric|min:0|max:50',
             'durasi_proyeksi_tahun' => 'required|integer|min:1|max:5',
-            'inflasi_biaya' => 'nullable|numeric|min:0|max:50',
+            'hari_piutang' => 'required|integer|min:0|max:365',
+            'hari_utang_usaha' => 'required|integer|min:0|max:365',
+            'faktor_musim_1' => 'required|numeric|min:0|max:300',
+            'faktor_musim_2' => 'required|numeric|min:0|max:300',
+            'faktor_musim_3' => 'required|numeric|min:0|max:300',
+            'faktor_musim_4' => 'required|numeric|min:0|max:300',
+            'faktor_musim_5' => 'required|numeric|min:0|max:300',
+            'faktor_musim_6' => 'required|numeric|min:0|max:300',
+            'faktor_musim_7' => 'required|numeric|min:0|max:300',
+            'faktor_musim_8' => 'required|numeric|min:0|max:300',
+            'faktor_musim_9' => 'required|numeric|min:0|max:300',
+            'faktor_musim_10' => 'required|numeric|min:0|max:300',
+            'faktor_musim_11' => 'required|numeric|min:0|max:300',
+            'faktor_musim_12' => 'required|numeric|min:0|max:300',
         ]);
 
         // --- 2. AMBIL DATA INPUT ---
         $hargaJual = $request->input('harga_jual');
-        $volumeAwal = $request->input('volume_penjualan');
+        $anggaranMarketing = $request->input('anggaran_marketing');
+        $cpl = max(0.01, $request->input('biaya_per_lead'));
+        $tingkatKonversi = $request->input('tingkat_konversi') / 100;
+        $kapasitasBulanan = max(0, $request->input('kapasitas_bulanan'));
         $capex = $request->input('capex');
         $modalKerja = $request->input('modal_kerja');
         $modalDisetorPemilik = $request->input('modal_disetor_pemilik');
@@ -61,29 +80,39 @@ class SimulatorController extends Controller
         $tenorPinjamanBulan = (int) $request->input('tenor_pinjaman_bulan');
         $masaManfaatAset = max(1, (float) $request->input('masa_manfaat_aset_tahun'));
         $cogs = $request->input('cogs');
-        $biayaTetap = $request->input('biaya_tetap');
-        $pertumbuhan = $request->input('tingkat_pertumbuhan') / 100;
+        $jumlahKaryawan = max(0, (int) $request->input('jumlah_karyawan'));
+        $gajiPerKaryawan = $request->input('gaji_per_karyawan');
         $kenaikanHargaTahunan = $request->input('kenaikan_harga_jual_tahunan') / 100;
         $tarifPajak = $request->input('tarif_pajak') / 100;
         $inflasiCogs = $request->input('inflasi_cogs_tahunan') / 100;
         $inflasiBiayaTetap = $request->input('inflasi_biaya_tetap_tahunan') / 100;
         $durasiTahun = max(1, (int) $request->input('durasi_proyeksi_tahun'));
+        $hariPiutang = max(0, (int) $request->input('hari_piutang'));
+        $hariUtangUsaha = max(0, (int) $request->input('hari_utang_usaha'));
+
+        $faktorMusim = [];
+        for ($bulan = 1; $bulan <= 12; $bulan++) {
+            $faktorMusim[] = (float) $request->input("faktor_musim_{$bulan}", 100);
+        }
 
         // Inisialisasi variabel iterasi bulanan
         $proyeksiLengkap = [];
         $totalBulanProyeksi = $durasiTahun * 12;
-        $volumePenjualanSaatIni = $volumeAwal;
         $cogsSaatIni = $cogs;
         $hargaJualSaatIni = $hargaJual;
-        $biayaTetapSaatIni = $biayaTetap;
+        $gajiSaatIni = $gajiPerKaryawan;
+        $biayaTetapSaatIni = $jumlahKaryawan * $gajiPerKaryawan;
+        $biayaTetapAwal = $biayaTetapSaatIni;
         $totalKeuntunganAfterTax = 0;
         $saldoKas = $modalKerja;
         $loanOutstanding = $jumlahPinjaman;
-        $monthlyPrincipalPayment = $tenorPinjamanBulan > 0 && $jumlahPinjaman > 0
-            ? $jumlahPinjaman / $tenorPinjamanBulan
-            : 0;
+        $monthlyAnnuityPayment = 0;
+        if ($tenorPinjamanBulan > 0 && $jumlahPinjaman > 0) {
+            $monthlyAnnuityPayment = $sukuBungaBulanan > 0
+                ? ($jumlahPinjaman * $sukuBungaBulanan) / (1 - pow(1 + $sukuBungaBulanan, -$tenorPinjamanBulan))
+                : $jumlahPinjaman / $tenorPinjamanBulan;
+        }
         $biayaDepresiasi = $masaManfaatAset > 0 ? $capex / ($masaManfaatAset * 12) : 0;
-        $pertumbuhanBulanan = $pertumbuhan / 12;
         $inflasiHargaBulanan = $kenaikanHargaTahunan / 12;
         $inflasiCogsBulanan = $inflasiCogs / 12;
         $inflasiBiayaTetapBulanan = $inflasiBiayaTetap / 12;
@@ -93,10 +122,20 @@ class SimulatorController extends Controller
         $paybackMonth = null;
         $cumulativeCFOAndCFI = 0;
         $yearlyTotals = [];
+        $piutangOffset = (int) ceil($hariPiutang / 30);
+        $utangOffset = (int) ceil($hariUtangUsaha / 30);
+        $piutangQueue = array_fill(0, $totalBulanProyeksi + $piutangOffset + 2, 0);
+        $utangQueue = array_fill(0, $totalBulanProyeksi + $utangOffset + 2, 0);
 
 
         // --- 3. JALANKAN BUSINESS LOGIC ENGINE (BLE) ---
         for ($i = 1; $i <= $totalBulanProyeksi; $i++) {
+
+            $musimKe = ($i - 1) % 12;
+            $faktorMusiman = ($faktorMusim[$musimKe] ?? 100) / 100;
+            $jumlahLead = $anggaranMarketing / $cpl;
+            $permintaan = $jumlahLead * $tingkatKonversi * $faktorMusiman;
+            $volumePenjualanSaatIni = min($permintaan, $kapasitasBulanan);
 
             $pendapatan = $volumePenjualanSaatIni * $hargaJualSaatIni;
             $biayaVariabel = $volumePenjualanSaatIni * $cogsSaatIni;
@@ -108,7 +147,16 @@ class SimulatorController extends Controller
 
             $pajakBulanIni = $labaSebelumPajak > 0 ? $labaSebelumPajak * $tarifPajak : 0;
             $keuntunganBersihSetelahPajak = $labaSebelumPajak - $pajakBulanIni;
-            $arusKasOperasi = $keuntunganBersihSetelahPajak + $biayaDepresiasi;
+
+            $piutangQueue[$i + $piutangOffset] = $pendapatan;
+            $kasDiterima = $piutangQueue[$i] ?? 0;
+
+            $utangQueue[$i + $utangOffset] = $biayaVariabel;
+            $pembayaranUtangUsaha = $utangQueue[$i] ?? 0;
+
+            $perubahanPiutang = $pendapatan - $kasDiterima;
+            $perubahanUtangUsaha = $biayaVariabel - $pembayaranUtangUsaha;
+            $arusKasOperasi = $keuntunganBersihSetelahPajak + $biayaDepresiasi - $perubahanPiutang + $perubahanUtangUsaha;
 
             $arusKasInvestasi = 0;
             if ($i === 1) {
@@ -122,7 +170,10 @@ class SimulatorController extends Controller
 
             $pembayaranPokok = 0;
             if ($loanOutstanding > 0 && $tenorPinjamanBulan > 0 && $i <= $tenorPinjamanBulan) {
-                $pembayaranPokok = min($monthlyPrincipalPayment, $loanOutstanding);
+                $pembayaranPokok = $sukuBungaBulanan > 0
+                    ? max(0, $monthlyAnnuityPayment - $biayaBunga)
+                    : $monthlyAnnuityPayment;
+                $pembayaranPokok = min($pembayaranPokok, $loanOutstanding);
                 $loanOutstanding -= $pembayaranPokok;
                 $arusKasPendanaan -= $pembayaranPokok;
             }
@@ -165,6 +216,8 @@ class SimulatorController extends Controller
                 'sisa_pinjaman' => round($loanOutstanding),
                 'volume_unit' => round($volumePenjualanSaatIni),
                 'harga_per_unit' => round($hargaJualSaatIni),
+                'kas_diterima' => round($kasDiterima),
+                'pembayaran_utang_usaha' => round($pembayaranUtangUsaha),
             ];
 
             $tahunKe = (int) ceil($i / 12);
@@ -198,10 +251,10 @@ class SimulatorController extends Controller
             $yearlyTotals[$tahunKe]['biaya_bunga'] += $biayaBunga;
             $yearlyTotals[$tahunKe]['ending_cash'] = $saldoKas;
 
-            $volumePenjualanSaatIni *= (1 + $pertumbuhanBulanan);
             $cogsSaatIni *= (1 + $inflasiCogsBulanan);
             $hargaJualSaatIni *= (1 + $inflasiHargaBulanan);
-            $biayaTetapSaatIni *= (1 + $inflasiBiayaTetapBulanan);
+            $gajiSaatIni *= (1 + $inflasiBiayaTetapBulanan);
+            $biayaTetapSaatIni = $jumlahKaryawan * $gajiSaatIni;
         }
 
         // --- 5. SIAPKAN HASIL AKHIR ---
@@ -214,7 +267,7 @@ class SimulatorController extends Controller
         }
 
         $marginKontribusi = $hargaJual - $cogs;
-        $titikImpasUnit = $marginKontribusi > 0 ? ceil($biayaTetap / $marginKontribusi) : 0;
+        $titikImpasUnit = $marginKontribusi > 0 ? ceil($biayaTetapAwal / $marginKontribusi) : 0;
 
 
         $proyeksiTahunan = [];
@@ -302,7 +355,10 @@ class SimulatorController extends Controller
         $validated = $request->validate([
             'nama_skenario' => 'required|string|max:255',
             'harga_jual' => 'required|numeric|min:1',
-            'volume_penjualan' => 'required|numeric|min:1',
+            'anggaran_marketing' => 'required|numeric|min:0',
+            'biaya_per_lead' => 'required|numeric|min:0.01',
+            'tingkat_konversi' => 'required|numeric|min:0|max:100',
+            'kapasitas_bulanan' => 'required|numeric|min:0',
             'capex' => 'required|numeric|min:0',
             'modal_kerja' => 'required|numeric|min:0',
             'modal_disetor_pemilik' => 'required|numeric|min:0',
@@ -311,18 +367,38 @@ class SimulatorController extends Controller
             'tenor_pinjaman_bulan' => 'required|integer|min:0|max:600',
             'masa_manfaat_aset_tahun' => 'required|numeric|min:1|max:30',
             'cogs' => 'required|numeric|min:0',
-            'biaya_tetap' => 'required|numeric|min:0',
-            'tingkat_pertumbuhan' => 'required|numeric|min:0|max:50',
+            'jumlah_karyawan' => 'required|integer|min:0',
+            'gaji_per_karyawan' => 'required|numeric|min:0',
             'kenaikan_harga_jual_tahunan' => 'required|numeric|min:0|max:50',
             'tarif_pajak' => 'required|numeric|min:0|max:100',
             'inflasi_cogs_tahunan' => 'required|numeric|min:0|max:50',
             'inflasi_biaya_tetap_tahunan' => 'required|numeric|min:0|max:50',
             'durasi_proyeksi_tahun' => 'required|integer|min:1|max:5',
-            'inflasi_biaya' => 'nullable|numeric|min:0|max:50',
+            'hari_piutang' => 'required|integer|min:0|max:365',
+            'hari_utang_usaha' => 'required|integer|min:0|max:365',
+            'faktor_musim_1' => 'required|numeric|min:0|max:300',
+            'faktor_musim_2' => 'required|numeric|min:0|max:300',
+            'faktor_musim_3' => 'required|numeric|min:0|max:300',
+            'faktor_musim_4' => 'required|numeric|min:0|max:300',
+            'faktor_musim_5' => 'required|numeric|min:0|max:300',
+            'faktor_musim_6' => 'required|numeric|min:0|max:300',
+            'faktor_musim_7' => 'required|numeric|min:0|max:300',
+            'faktor_musim_8' => 'required|numeric|min:0|max:300',
+            'faktor_musim_9' => 'required|numeric|min:0|max:300',
+            'faktor_musim_10' => 'required|numeric|min:0|max:300',
+            'faktor_musim_11' => 'required|numeric|min:0|max:300',
+            'faktor_musim_12' => 'required|numeric|min:0|max:300',
         ]);
 
-        $validated['inflasi_biaya'] = $validated['inflasi_cogs_tahunan'];
         $validated['user_id'] = $userId;
+        $validated['seasonality_factors'] = json_encode($request->only([
+            'faktor_musim_1', 'faktor_musim_2', 'faktor_musim_3', 'faktor_musim_4', 'faktor_musim_5', 'faktor_musim_6',
+            'faktor_musim_7', 'faktor_musim_8', 'faktor_musim_9', 'faktor_musim_10', 'faktor_musim_11', 'faktor_musim_12',
+        ]));
+        $validated['volume_penjualan'] = (int) round(($validated['anggaran_marketing'] / max($validated['biaya_per_lead'], 0.01)) * ($validated['tingkat_konversi'] / 100));
+        $validated['biaya_tetap'] = $validated['jumlah_karyawan'] * $validated['gaji_per_karyawan'];
+        $validated['tingkat_pertumbuhan'] = 0;
+        $validated['inflasi_biaya'] = $validated['inflasi_cogs_tahunan'];
 
         try {
             $simulation = Simulation::create($validated);
@@ -352,17 +428,20 @@ class SimulatorController extends Controller
                                     ->findOrFail($id);
 
             $data = $simulation->only([
-                'harga_jual', 'volume_penjualan', 'capex', 'modal_kerja', 'modal_disetor_pemilik',
-                'jumlah_pinjaman', 'bunga_pinjaman_tahunan', 'tenor_pinjaman_bulan', 'masa_manfaat_aset_tahun',
-                'cogs', 'biaya_tetap', 'tingkat_pertumbuhan', 'kenaikan_harga_jual_tahunan',
-                'tarif_pajak', 'inflasi_cogs_tahunan', 'inflasi_biaya_tetap_tahunan', 'durasi_proyeksi_tahun', 'inflasi_biaya'
+                'harga_jual', 'anggaran_marketing', 'biaya_per_lead', 'tingkat_konversi', 'kapasitas_bulanan',
+                'capex', 'modal_kerja', 'modal_disetor_pemilik', 'jumlah_pinjaman', 'bunga_pinjaman_tahunan',
+                'tenor_pinjaman_bulan', 'masa_manfaat_aset_tahun', 'cogs', 'jumlah_karyawan', 'gaji_per_karyawan',
+                'kenaikan_harga_jual_tahunan', 'tarif_pajak', 'inflasi_cogs_tahunan', 'inflasi_biaya_tetap_tahunan',
+                'durasi_proyeksi_tahun', 'hari_piutang', 'hari_utang_usaha', 'seasonality_factors'
             ]);
 
-            if (($data['inflasi_cogs_tahunan'] ?? 0) == 0 && ($data['inflasi_biaya'] ?? 0) > 0) {
-                $data['inflasi_cogs_tahunan'] = $data['inflasi_biaya'];
-            }
-            if (($data['inflasi_biaya_tetap_tahunan'] ?? 0) == 0 && ($data['inflasi_biaya'] ?? 0) > 0) {
-                $data['inflasi_biaya_tetap_tahunan'] = $data['inflasi_biaya'];
+            $seasonality = is_array($data['seasonality_factors'] ?? null)
+                ? $data['seasonality_factors']
+                : (json_decode($data['seasonality_factors'] ?? '{}', true) ?: []);
+
+            for ($bulan = 1; $bulan <= 12; $bulan++) {
+                $key = "faktor_musim_{$bulan}";
+                $data[$key] = $seasonality[$key] ?? 100;
             }
 
             return response()->json([

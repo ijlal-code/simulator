@@ -45,11 +45,9 @@ document.addEventListener('DOMContentLoaded', () => {
         warningCard: document.getElementById('cash-warning-card'),
         warningMessage: document.getElementById('cash-warning-message'),
         errorMessages: document.querySelectorAll('.error-message'),
-        sliderGrowth: document.getElementById('tingkat_pertumbuhan'),
         sliderPrice: document.getElementById('kenaikan_harga_jual_tahunan'),
         sliderInflasiCogs: document.getElementById('inflasi_cogs_tahunan'),
         sliderInflasiTetap: document.getElementById('inflasi_biaya_tetap_tahunan'),
-        legacyInflasiInput: document.getElementById('inflasi_biaya'),
         ebitdaField: document.getElementById('ebitda-year1'),
         grossMarginField: document.getElementById('gross-margin'),
         netMarginField: document.getElementById('net-margin'),
@@ -83,6 +81,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const formatPercent = (value) => `${numberFormatter.format(Number(value) || 0)}%`;
     const formatYears = (value) => `${numberFormatter.format(Number(value) || 0)} Tahun`;
     const formatMonths = (value) => `${numberFormatter.format(Number(value) || 0)} Bulan`;
+    const formatDays = (value) => `${numberFormatter.format(Math.round(Number(value) || 0))} Hari`;
+    const formatPeople = (value) => `${numberFormatter.format(Math.round(Number(value) || 0))} Orang`;
     const setSkenarioBMessage = (message = '', variant = 'info') => {
         if (!dom.skenarioBMessage) return;
         const colorClasses = ['text-emerald-600', 'text-red-600', 'text-indigo-600'];
@@ -143,8 +143,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (field === 'harga_jual' && dom.skenarioBContainer && !dom.skenarioBContainer.classList.contains('hidden')) {
                 target = document.getElementById('error-harga_jual_skenario_b');
             }
-            if (field === 'volume_penjualan' && dom.skenarioBContainer && !dom.skenarioBContainer.classList.contains('hidden')) {
-                target = document.getElementById('error-volume_penjualan_skenario_b');
+            if (field === 'anggaran_marketing' && dom.skenarioBContainer && !dom.skenarioBContainer.classList.contains('hidden')) {
+                target = document.getElementById('error-anggaran_marketing_skenario_b');
             }
 
             if (target) {
@@ -353,7 +353,8 @@ document.addEventListener('DOMContentLoaded', () => {
             harga_jual: formatRupiah,
             modal_kerja: formatRupiah,
             capex: formatRupiah,
-            volume_penjualan: formatUnit,
+            anggaran_marketing: formatRupiah,
+            kapasitas_bulanan: formatUnit,
         };
         dom.saveSummaryFields.forEach((field) => {
             const key = field.dataset.saveSummary;
@@ -365,13 +366,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const updateInputSummary = () => {
         const formatterMap = {
             harga_jual: formatRupiah,
-            volume_penjualan: formatUnit,
-            tingkat_pertumbuhan: formatPercent,
+            anggaran_marketing: formatRupiah,
+            biaya_per_lead: formatRupiah,
+            tingkat_konversi: formatPercent,
+            kapasitas_bulanan: formatUnit,
             modal_kerja: formatRupiah,
             modal_disetor_pemilik: formatRupiah,
             capex: formatRupiah,
             cogs: formatRupiah,
-            biaya_tetap: formatRupiah,
+            jumlah_karyawan: formatPeople,
+            gaji_per_karyawan: formatRupiah,
             jumlah_pinjaman: formatRupiah,
             bunga_pinjaman_tahunan: formatPercent,
             tenor_pinjaman_bulan: formatMonths,
@@ -381,6 +385,8 @@ document.addEventListener('DOMContentLoaded', () => {
             inflasi_biaya_tetap_tahunan: formatPercent,
             durasi_proyeksi_tahun: formatYears,
             tarif_pajak: formatPercent,
+            hari_piutang: formatDays,
+            hari_utang_usaha: formatDays,
         };
 
         dom.inputSummaryFields?.forEach((field) => {
@@ -434,23 +440,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const input = document.getElementById(key);
             if (input) {
                 input.value = value;
-                if (key === 'tingkat_pertumbuhan') {
-                    document.getElementById('pertumbuhan_val').innerText = `${value}%`;
-                }
                 if (key === 'kenaikan_harga_jual_tahunan') {
                     document.getElementById('kenaikan_harga_val').innerText = `${value}%`;
                 }
                 if (key === 'inflasi_cogs_tahunan') {
                     document.getElementById('inflasi_cogs_val').innerText = `${value}%`;
-                    if (dom.legacyInflasiInput) {
-                        dom.legacyInflasiInput.value = value;
-                    }
                 }
                 if (key === 'inflasi_biaya_tetap_tahunan') {
                     document.getElementById('inflasi_biaya_tetap_val').innerText = `${value}%`;
-                }
-                if (key === 'inflasi_biaya' && dom.legacyInflasiInput) {
-                    dom.legacyInflasiInput.value = value;
                 }
             }
         });
@@ -632,18 +629,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     showStep(1);
-    updateSliderPreview(dom.sliderGrowth, 'pertumbuhan_val');
     updateSliderPreview(dom.sliderPrice, 'kenaikan_harga_val');
     updateSliderPreview(dom.sliderInflasiCogs, 'inflasi_cogs_val');
     updateSliderPreview(dom.sliderInflasiTetap, 'inflasi_biaya_tetap_val');
-
-    const syncLegacyInflation = () => {
-        if (dom.legacyInflasiInput && dom.sliderInflasiCogs) {
-            dom.legacyInflasiInput.value = dom.sliderInflasiCogs.value;
-        }
-    };
-    dom.sliderInflasiCogs?.addEventListener('input', syncLegacyInflation);
-    syncLegacyInflation();
 
     const calculateUrl = dom.formA.dataset.calculateUrl;
     const saveUrl = dom.saveButton?.dataset.saveUrl;
@@ -847,7 +835,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (dom.showSkenarioBButton) {
         dom.showSkenarioBButton.addEventListener('click', () => {
             document.getElementById('harga_jual_skenario_b').value = state.lastInputs.harga_jual || '';
-            document.getElementById('volume_penjualan_skenario_b').value = state.lastInputs.volume_penjualan || '';
+            document.getElementById('anggaran_marketing_skenario_b').value = state.lastInputs.anggaran_marketing || '';
             dom.skenarioBContainer.classList.remove('hidden');
             dom.showSkenarioBButton.classList.add('hidden');
             setSkenarioBMessage('', 'info');
@@ -867,7 +855,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const combined = new FormData();
             Object.entries(state.lastInputs).forEach(([key, value]) => combined.append(key, value));
             combined.append('harga_jual', formBData.get('harga_jual'));
-            combined.append('volume_penjualan', formBData.get('volume_penjualan'));
+            combined.append('anggaran_marketing', formBData.get('anggaran_marketing'));
             combined.append('_token', csrfToken);
             calculateSkenarioB(combined);
         });
